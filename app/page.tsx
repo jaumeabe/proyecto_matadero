@@ -156,7 +156,7 @@ export default function Home() {
     try {
       for (const row of validRows) {
         const { totalCerdos, numCamiones } = calcTotals(row)
-        await fetch('/api/previsiones', {
+        const res = await fetch('/api/previsiones', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -181,11 +181,17 @@ export default function Home() {
             semana_prevision: parseInt(row.semana_prevision) || semana
           })
         })
+        const result = await res.json()
+        if (!result.success) {
+          alert('Error al guardar: ' + result.error)
+          setLoading(false)
+          return
+        }
       }
       setRows([emptyRow()])
       fetchPrevisiones()
-    } catch {
-      alert('Error al guardar')
+    } catch (err) {
+      alert('Error al guardar: ' + (err instanceof Error ? err.message : 'Error desconocido'))
     }
     setLoading(false)
   }
