@@ -266,10 +266,10 @@ export default function Home() {
                   ))}
                   <th className="px-1 py-1 text-center font-semibold">Saldos</th>
                   <th className="px-1 py-1 text-center font-semibold bg-green-100">Cerdos</th>
-                  <th className="px-1 py-1 text-center font-semibold bg-yellow-100">Cam.</th>
-                  <th className="px-1 py-1 text-center font-semibold">Vac.</th>
+                  <th className="px-1 py-1 text-center font-semibold bg-yellow-100">Camiones</th>
+                  <th className="px-1 py-1 text-center font-semibold">Vaciado</th>
                   <th className="px-1 py-1 text-left font-semibold">Obs.</th>
-                  <th className="px-1 py-1 text-center font-semibold bg-purple-100">S.P.</th>
+                  <th className="px-1 py-1 text-center font-semibold bg-purple-100">Semana</th>
                   <th className="px-1 py-1"></th>
                 </tr>
               </thead>
@@ -453,10 +453,10 @@ export default function Home() {
                   ))}
                   <th className="px-1 py-1 text-center font-semibold">Saldos</th>
                   <th className="px-1 py-1 text-center font-semibold bg-green-50">Cerdos</th>
-                  <th className="px-1 py-1 text-center font-semibold bg-yellow-50">Cam.</th>
-                  <th className="px-1 py-1 text-center font-semibold">Vac.</th>
+                  <th className="px-1 py-1 text-center font-semibold bg-yellow-50">Camiones</th>
+                  <th className="px-1 py-1 text-center font-semibold">Vaciado</th>
                   <th className="px-1 py-1 text-left font-semibold">Obs.</th>
-                  <th className="px-1 py-1 text-center font-semibold bg-purple-50">S.P.</th>
+                  <th className="px-1 py-1 text-center font-semibold bg-purple-50">Semana</th>
                   <th className="px-1 py-1"></th>
                 </tr>
               </thead>
