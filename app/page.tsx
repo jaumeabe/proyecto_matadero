@@ -35,7 +35,7 @@ interface FormRow {
   peso_100_105: string
   peso_95_100: string
   peso_menos_95: string
-  baldos: string
+  saldos: string
   vaciado: string
   observaciones: string
 }
@@ -55,7 +55,7 @@ interface Prevision {
   peso_100_105: number
   peso_95_100: number
   peso_menos_95: number
-  baldos: number
+  saldos: number
   cerdos_prevision: number
   num_camiones: number
   vaciado: string
@@ -68,7 +68,7 @@ function emptyRow(): FormRow {
     granja: '', codigo_granja: '', no_registro: '',
     peso_125_130: '', peso_120_125: '', peso_115_120: '', peso_110_115: '',
     peso_105_110: '', peso_100_105: '', peso_95_100: '', peso_menos_95: '',
-    baldos: '', vaciado: 'No', observaciones: ''
+    saldos: '', vaciado: 'No', observaciones: ''
   }
 }
 
@@ -80,7 +80,7 @@ function calcTotals(row: FormRow) {
     totalCerdos += val
     totalKg += val * r.midpoint
   }
-  totalCerdos += parseInt(row.baldos) || 0
+  totalCerdos += parseInt(row.saldos) || 0
   const numCamiones = totalKg > 0 ? Math.ceil(totalKg / MAX_KG_PER_TRUCK) : 0
   return { totalCerdos, totalKg, numCamiones }
 }
@@ -168,7 +168,7 @@ export default function Home() {
             peso_100_105: parseInt(row.peso_100_105) || 0,
             peso_95_100: parseInt(row.peso_95_100) || 0,
             peso_menos_95: parseInt(row.peso_menos_95) || 0,
-            baldos: parseInt(row.baldos) || 0,
+            saldos: parseInt(row.saldos) || 0,
             cerdos_prevision: totalCerdos,
             num_camiones: numCamiones,
             vaciado: row.vaciado,
@@ -204,10 +204,10 @@ export default function Home() {
     peso_100_105: acc.peso_100_105 + p.peso_100_105,
     peso_95_100: acc.peso_95_100 + p.peso_95_100,
     peso_menos_95: acc.peso_menos_95 + p.peso_menos_95,
-    baldos: acc.baldos + p.baldos,
+    saldos: acc.saldos + p.saldos,
     cerdos: acc.cerdos + p.cerdos_prevision,
     camiones: acc.camiones + p.num_camiones,
-  }), { peso_125_130: 0, peso_120_125: 0, peso_115_120: 0, peso_110_115: 0, peso_105_110: 0, peso_100_105: 0, peso_95_100: 0, peso_menos_95: 0, baldos: 0, cerdos: 0, camiones: 0 })
+  }), { peso_125_130: 0, peso_120_125: 0, peso_115_120: 0, peso_110_115: 0, peso_105_110: 0, peso_100_105: 0, peso_95_100: 0, peso_menos_95: 0, saldos: 0, cerdos: 0, camiones: 0 })
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -238,7 +238,7 @@ export default function Home() {
                   <th className="p-2 text-left font-semibold min-w-[200px]">Granja</th>
                   <th className="p-2 text-left font-semibold min-w-[140px]">No. Registro</th>
                   <th colSpan={8} className="p-2 text-center font-semibold bg-blue-100">PESOS (No. cerdos por rango)</th>
-                  <th className="p-2 text-center font-semibold">Baldos</th>
+                  <th className="p-2 text-center font-semibold">Saldos</th>
                   <th className="p-2 text-center font-semibold bg-green-100">Cerdos Prevision</th>
                   <th className="p-2 text-center font-semibold bg-yellow-100">No. Camiones</th>
                   <th className="p-2 text-center font-semibold min-w-[80px]">Vaciado</th>
@@ -312,8 +312,8 @@ export default function Home() {
                           type="number"
                           min="0"
                           className="w-16 border rounded px-1 py-1 text-sm text-center"
-                          value={row.baldos}
-                          onChange={e => updateRow(idx, 'baldos', e.target.value)}
+                          value={row.saldos}
+                          onChange={e => updateRow(idx, 'saldos', e.target.value)}
                           placeholder="0"
                         />
                       </td>
@@ -419,7 +419,7 @@ export default function Home() {
                   {PESO_RANGES.map(r => (
                     <th key={r.key} className="p-2 text-center font-semibold text-xs bg-blue-50">{r.label}</th>
                   ))}
-                  <th className="p-2 text-center font-semibold">Baldos</th>
+                  <th className="p-2 text-center font-semibold">Saldos</th>
                   <th className="p-2 text-center font-semibold bg-green-50">Cerdos</th>
                   <th className="p-2 text-center font-semibold bg-yellow-50">Camiones</th>
                   <th className="p-2 text-center font-semibold">Vaciado</th>
@@ -441,7 +441,7 @@ export default function Home() {
                     <td className="p-2 text-center">{p.peso_100_105 || '-'}</td>
                     <td className="p-2 text-center">{p.peso_95_100 || '-'}</td>
                     <td className="p-2 text-center">{p.peso_menos_95 || '-'}</td>
-                    <td className="p-2 text-center">{p.baldos || '-'}</td>
+                    <td className="p-2 text-center">{p.saldos || '-'}</td>
                     <td className="p-2 text-center font-bold text-green-700">{p.cerdos_prevision}</td>
                     <td className="p-2 text-center font-bold text-yellow-700">{p.num_camiones}</td>
                     <td className="p-2 text-center">
@@ -472,7 +472,7 @@ export default function Home() {
                     <td className="p-2 text-center">{totals.peso_100_105}</td>
                     <td className="p-2 text-center">{totals.peso_95_100}</td>
                     <td className="p-2 text-center">{totals.peso_menos_95}</td>
-                    <td className="p-2 text-center">{totals.baldos}</td>
+                    <td className="p-2 text-center">{totals.saldos}</td>
                     <td className="p-2 text-center text-green-700">{totals.cerdos}</td>
                     <td className="p-2 text-center text-yellow-700">{totals.camiones}</td>
                     <td colSpan={3}></td>

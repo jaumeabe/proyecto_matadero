@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       semana, anio, granja, codigo_granja, no_registro,
       peso_125_130, peso_120_125, peso_115_120, peso_110_115,
       peso_105_110, peso_100_105, peso_95_100, peso_menos_95,
-      baldos, cerdos_prevision, num_camiones, vaciado, observaciones
+      saldos, cerdos_prevision, num_camiones, vaciado, observaciones
     } = body
 
     const result = await sql(
@@ -41,14 +41,14 @@ export async function POST(request: NextRequest) {
         semana, anio, granja, codigo_granja, no_registro,
         peso_125_130, peso_120_125, peso_115_120, peso_110_115,
         peso_105_110, peso_100_105, peso_95_100, peso_menos_95,
-        baldos, cerdos_prevision, num_camiones, vaciado, observaciones
+        saldos, cerdos_prevision, num_camiones, vaciado, observaciones
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
       RETURNING *`,
       [
         semana, anio, granja, codigo_granja, no_registro,
         peso_125_130 || 0, peso_120_125 || 0, peso_115_120 || 0, peso_110_115 || 0,
         peso_105_110 || 0, peso_100_105 || 0, peso_95_100 || 0, peso_menos_95 || 0,
-        baldos || 0, cerdos_prevision || 0, num_camiones || 0, vaciado || 'No', observaciones || ''
+        saldos || 0, cerdos_prevision || 0, num_camiones || 0, vaciado || 'No', observaciones || ''
       ]
     )
 

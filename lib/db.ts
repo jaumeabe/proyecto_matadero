@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS previsiones (
   peso_100_105 INT DEFAULT 0,
   peso_95_100 INT DEFAULT 0,
   peso_menos_95 INT DEFAULT 0,
-  baldos INT DEFAULT 0,
+  saldos INT DEFAULT 0,
   cerdos_prevision INT DEFAULT 0,
   num_camiones DECIMAL(5,1) DEFAULT 0,
   vaciado VARCHAR(3) DEFAULT 'No',
