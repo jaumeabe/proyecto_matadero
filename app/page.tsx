@@ -14,7 +14,16 @@ const PESO_RANGES = [
   { key: 'peso_menos_95', label: '<95', midpoint: 92.5 },
 ]
 
-const MAX_KG_PER_TRUCK = 26000
+const ANIMALS_PER_TRUCK: Record<string, number> = {
+  peso_125_130: 190,
+  peso_120_125: 200,
+  peso_115_120: 210,
+  peso_110_115: 220,
+  peso_105_110: 220,
+  peso_100_105: 220,
+  peso_95_100: 220,
+  peso_menos_95: 220,
+}
 
 function getWeekNumber(d: Date): number {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
@@ -78,15 +87,15 @@ function emptyRow(): FormRow {
 
 function calcTotals(row: FormRow) {
   let totalCerdos = 0
-  let totalKg = 0
+  let numCamiones = 0
   for (const r of PESO_RANGES) {
     const val = parseInt(row[r.key as keyof FormRow] as string) || 0
     totalCerdos += val
-    totalKg += val * r.midpoint
+    numCamiones += val / (ANIMALS_PER_TRUCK[r.key] || 220)
   }
   totalCerdos += parseInt(row.saldos) || 0
-  const numCamiones = totalKg > 0 ? Math.ceil(totalKg / MAX_KG_PER_TRUCK) : 0
-  return { totalCerdos, totalKg, numCamiones }
+  numCamiones = Math.round(numCamiones * 100) / 100
+  return { totalCerdos, numCamiones }
 }
 
 export default function Home() {
@@ -230,8 +239,17 @@ export default function Home() {
     peso_menos_95: acc.peso_menos_95 + p.peso_menos_95,
     saldos: acc.saldos + p.saldos,
     cerdos: acc.cerdos + p.cerdos_prevision,
-    camiones: acc.camiones + p.num_camiones,
+    camiones: acc.camiones + Number(p.num_camiones),
   }), { peso_125_130: 0, peso_120_125: 0, peso_115_120: 0, peso_110_115: 0, peso_105_110: 0, peso_100_105: 0, peso_95_100: 0, peso_menos_95: 0, saldos: 0, cerdos: 0, camiones: 0 })
+
+  // Truck breakdown by weight range
+  const truckBreakdown = [
+    { label: '125-130 kg', animals: totals.peso_125_130, perTruck: 190 },
+    { label: '120-125 kg', animals: totals.peso_120_125, perTruck: 200 },
+    { label: '115-120 kg', animals: totals.peso_115_120, perTruck: 210 },
+    { label: '<115 kg', animals: totals.peso_110_115 + totals.peso_105_110 + totals.peso_100_105 + totals.peso_95_100 + totals.peso_menos_95, perTruck: 220 },
+  ].map(t => ({ ...t, trucks: Math.round((t.animals / t.perTruck) * 100) / 100 }))
+  const totalTrucks = Math.round(truckBreakdown.reduce((s, t) => s + t.trucks, 0) * 100) / 100
 
   return (
     <div className="min-h-screen bg-gray-50 p-2">
@@ -547,10 +565,47 @@ export default function Home() {
           </div>
           {previsiones.length > 0 && (
             <div className="p-2 border-t text-xs text-gray-500">
-              Total: {previsiones.length} | Camiones: {totals.camiones}
+              Total: {previsiones.length} | Camiones: {totalTrucks}
             </div>
           )}
         </div>
+
+        {/* Truck breakdown */}
+        {previsiones.length > 0 && (
+          <div className="bg-white rounded-lg shadow mt-3">
+            <div className="p-2 border-b bg-yellow-50 rounded-t-lg">
+              <h2 className="text-sm font-semibold text-yellow-800">Tipos de Camiones</h2>
+            </div>
+            <div className="p-3">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="px-2 py-1 text-left font-semibold">Rango de Peso</th>
+                    <th className="px-2 py-1 text-center font-semibold">Animales</th>
+                    <th className="px-2 py-1 text-center font-semibold">Animales/Camion</th>
+                    <th className="px-2 py-1 text-center font-semibold">Camiones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {truckBreakdown.map(t => (
+                    <tr key={t.label} className="border-b">
+                      <td className="px-2 py-1 font-medium">{t.label}</td>
+                      <td className="px-2 py-1 text-center">{t.animals}</td>
+                      <td className="px-2 py-1 text-center text-gray-500">{t.perTruck}</td>
+                      <td className="px-2 py-1 text-center font-bold text-yellow-700">{t.trucks}</td>
+                    </tr>
+                  ))}
+                  <tr className="bg-gray-100 font-bold">
+                    <td className="px-2 py-1">TOTAL</td>
+                    <td className="px-2 py-1 text-center">{truckBreakdown.reduce((s, t) => s + t.animals, 0)}</td>
+                    <td className="px-2 py-1"></td>
+                    <td className="px-2 py-1 text-center text-yellow-700">{totalTrucks}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
