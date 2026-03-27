@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "excel-reader",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["serve_excel.py"],
+      "port": 8765
+    },
+    {
+      "name": "previsionvisitador",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    }
+  ]
+}

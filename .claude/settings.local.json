@@ -1,7 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git -C \"C:/Users/jaumejr/Documents/GitHub/Proyecto albaranes matadero\" status)"
+      "Bash(git -C \"C:/Users/jaumejr/Documents/GitHub/Proyecto albaranes matadero\" status)",
+      "Bash(python3 -c \":*)",
+      "Bash(python -c \"import pandas as pd; df = pd.read_excel\\(''GRANJAS CEBO.xlsx''\\); print\\(df.to_string\\(\\)\\); print\\(''---COLUMNS---''\\); print\\(df.columns.tolist\\(\\)\\)\")",
+      "Bash(python -c \"import pandas as pd; df = pd.read_excel\\(r''C:\\\\Users\\\\jaumejr\\\\Documents\\\\GitHub\\\\Proyecto albaranes matadero\\\\GRANJAS CEBO.xlsx''\\); print\\(df.to_string\\(\\)\\); print\\(''---COLUMNS---''\\); print\\(df.columns.tolist\\(\\)\\)\")",
+      "Bash(python -c \":*)",
+      "Bash(/c/Users/jaumejr/AppData/Local/Programs/Python/Python312/python.exe -c \"import pandas as pd; print\\(''pandas ok''\\)\")",
+      "Bash(python read_excel.py)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm install:*)",
+      "WebFetch(domain:vercel.com)",
+      "WebFetch(domain:previsionvisitador.vercel.app)"
     ]
   }
 }
