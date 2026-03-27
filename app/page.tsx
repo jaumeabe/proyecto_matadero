@@ -24,6 +24,7 @@ function getWeekNumber(d: Date): number {
 }
 
 interface FormRow {
+  visitador: string
   granja: string
   codigo_granja: string
   no_registro: string
@@ -38,12 +39,14 @@ interface FormRow {
   saldos: string
   vaciado: string
   observaciones: string
+  semana_prevision: string
 }
 
 interface Prevision {
   id: number
   semana: number
   anio: number
+  visitador: string
   granja: string
   codigo_granja: string
   no_registro: string
@@ -60,15 +63,16 @@ interface Prevision {
   num_camiones: number
   vaciado: string
   observaciones: string
+  semana_prevision: number
   created_at: string
 }
 
 function emptyRow(): FormRow {
   return {
-    granja: '', codigo_granja: '', no_registro: '',
+    visitador: '', granja: '', codigo_granja: '', no_registro: '',
     peso_125_130: '', peso_120_125: '', peso_115_120: '', peso_110_115: '',
     peso_105_110: '', peso_100_105: '', peso_95_100: '', peso_menos_95: '',
-    saldos: '', vaciado: 'No', observaciones: ''
+    saldos: '', vaciado: 'No', observaciones: '', semana_prevision: ''
   }
 }
 
@@ -157,6 +161,7 @@ export default function Home() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             semana, anio,
+            visitador: row.visitador,
             granja: row.granja,
             codigo_granja: row.codigo_granja,
             no_registro: row.no_registro,
@@ -172,7 +177,8 @@ export default function Home() {
             cerdos_prevision: totalCerdos,
             num_camiones: numCamiones,
             vaciado: row.vaciado,
-            observaciones: row.observaciones
+            observaciones: row.observaciones,
+            semana_prevision: parseInt(row.semana_prevision) || semana
           })
         })
       }
@@ -188,6 +194,17 @@ export default function Home() {
     if (!confirm('Eliminar esta entrada?')) return
     await fetch(`/api/previsiones?id=${id}`, { method: 'DELETE' })
     fetchPrevisiones()
+  }
+
+  async function handleUpdateSemana(id: number, semana_prevision: number) {
+    try {
+      await fetch('/api/previsiones', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, semana_prevision })
+      })
+      fetchPrevisiones()
+    } catch { /* ignore */ }
   }
 
   const filteredGranjas = searchGranja
@@ -210,53 +227,44 @@ export default function Home() {
   }), { peso_125_130: 0, peso_120_125: 0, peso_115_120: 0, peso_110_115: 0, peso_105_110: 0, peso_100_105: 0, peso_95_100: 0, peso_menos_95: 0, saldos: 0, cerdos: 0, camiones: 0 })
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-[1600px] mx-auto">
+    <div className="min-h-screen bg-gray-50 p-2">
+      <div className="max-w-full mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="bg-white rounded-lg shadow p-3 mb-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Prevision Visitador</h1>
-              <p className="text-gray-500 mt-1">Semana {semana} - Ano {anio}</p>
+              <h1 className="text-lg font-bold text-gray-800">Prevision Visitador</h1>
+              <p className="text-gray-500 text-xs">Semana {semana} - Ano {anio}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className={`inline-block w-3 h-3 rounded-full ${dbReady ? 'bg-green-500' : 'bg-red-500'}`}></span>
-              <span className="text-sm text-gray-600">{dbReady ? 'Base de datos conectada' : 'Sin conexion a BD'}</span>
+            <div className="flex items-center gap-1">
+              <span className={`inline-block w-2 h-2 rounded-full ${dbReady ? 'bg-green-500' : 'bg-red-500'}`}></span>
+              <span className="text-xs text-gray-600">{dbReady ? 'BD conectada' : 'Sin BD'}</span>
             </div>
           </div>
         </div>
 
         {/* Form */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="p-4 border-b bg-blue-50 rounded-t-lg">
-            <h2 className="text-lg font-semibold text-blue-800">Nueva Prevision - Semana {semana}</h2>
+        <div className="bg-white rounded-lg shadow mb-3">
+          <div className="p-2 border-b bg-blue-50 rounded-t-lg">
+            <h2 className="text-sm font-semibold text-blue-800">Nueva Prevision - Semana {semana}</h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="p-2 text-left font-semibold min-w-[200px]">Granja</th>
-                  <th className="p-2 text-left font-semibold min-w-[140px]">No. Registro</th>
-                  <th colSpan={8} className="p-2 text-center font-semibold bg-blue-100">PESOS (No. cerdos por rango)</th>
-                  <th className="p-2 text-center font-semibold">Saldos</th>
-                  <th className="p-2 text-center font-semibold bg-green-100">Cerdos Prevision</th>
-                  <th className="p-2 text-center font-semibold bg-yellow-100">No. Camiones</th>
-                  <th className="p-2 text-center font-semibold min-w-[80px]">Vaciado</th>
-                  <th className="p-2 text-left font-semibold min-w-[150px]">Observaciones</th>
-                  <th className="p-2"></th>
-                </tr>
-                <tr className="bg-gray-50 text-xs">
-                  <th></th>
-                  <th></th>
+                  <th className="px-1 py-1 text-left font-semibold">Visitador</th>
+                  <th className="px-1 py-1 text-left font-semibold">Granja</th>
+                  <th className="px-1 py-1 text-left font-semibold">No. Reg.</th>
                   {PESO_RANGES.map(r => (
-                    <th key={r.key} className="p-1 text-center bg-blue-50 font-medium">{r.label}</th>
+                    <th key={r.key} className="px-1 py-1 text-center font-semibold bg-blue-50">{r.label}</th>
                   ))}
-                  <th></th>
-                  <th></th>
-                  <th></th>
-                  <th></th>
-                  <th></th>
-                  <th></th>
+                  <th className="px-1 py-1 text-center font-semibold">Saldos</th>
+                  <th className="px-1 py-1 text-center font-semibold bg-green-100">Cerdos</th>
+                  <th className="px-1 py-1 text-center font-semibold bg-yellow-100">Cam.</th>
+                  <th className="px-1 py-1 text-center font-semibold">Vac.</th>
+                  <th className="px-1 py-1 text-left font-semibold">Obs.</th>
+                  <th className="px-1 py-1 text-center font-semibold bg-purple-100">S.P.</th>
+                  <th className="px-1 py-1"></th>
                 </tr>
               </thead>
               <tbody>
@@ -264,72 +272,79 @@ export default function Home() {
                   const { totalCerdos, numCamiones } = calcTotals(row)
                   return (
                     <tr key={idx} className="border-b hover:bg-gray-50">
-                      <td className="p-1">
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="Buscar granja..."
-                            className="w-full border rounded px-2 py-1 text-sm"
-                            value={row.granja}
-                            onChange={e => {
-                              updateRow(idx, 'granja', e.target.value)
-                              setSearchGranja(e.target.value)
-                            }}
-                            list={`granjas-${idx}`}
-                          />
-                          <datalist id={`granjas-${idx}`}>
-                            {filteredGranjas.map(g => (
-                              <option key={g.codigo} value={g.nombre}>
-                                {g.codigo} - {g.nombre}
-                              </option>
-                            ))}
-                          </datalist>
-                        </div>
-                      </td>
-                      <td className="p-1">
+                      <td className="px-0.5 py-0.5">
                         <input
                           type="text"
-                          className="w-full border rounded px-2 py-1 text-sm bg-gray-50"
+                          className="w-20 border rounded px-1 py-0.5 text-xs"
+                          value={row.visitador}
+                          onChange={e => updateRow(idx, 'visitador', e.target.value)}
+                          placeholder="Nombre"
+                        />
+                      </td>
+                      <td className="px-0.5 py-0.5">
+                        <input
+                          type="text"
+                          placeholder="Granja..."
+                          className="w-32 border rounded px-1 py-0.5 text-xs"
+                          value={row.granja}
+                          onChange={e => {
+                            updateRow(idx, 'granja', e.target.value)
+                            setSearchGranja(e.target.value)
+                          }}
+                          list={`granjas-${idx}`}
+                        />
+                        <datalist id={`granjas-${idx}`}>
+                          {filteredGranjas.map(g => (
+                            <option key={g.codigo} value={g.nombre}>
+                              {g.codigo} - {g.nombre}
+                            </option>
+                          ))}
+                        </datalist>
+                      </td>
+                      <td className="px-0.5 py-0.5">
+                        <input
+                          type="text"
+                          className="w-20 border rounded px-1 py-0.5 text-xs bg-gray-50"
                           value={row.no_registro}
                           readOnly
                           placeholder="Auto"
                         />
                       </td>
                       {PESO_RANGES.map(r => (
-                        <td key={r.key} className="p-1">
+                        <td key={r.key} className="px-0.5 py-0.5">
                           <input
                             type="number"
                             min="0"
-                            className="w-16 border rounded px-1 py-1 text-sm text-center"
+                            className="w-11 border rounded px-0.5 py-0.5 text-xs text-center"
                             value={row[r.key as keyof FormRow]}
                             onChange={e => updateRow(idx, r.key as keyof FormRow, e.target.value)}
                             placeholder="0"
                           />
                         </td>
                       ))}
-                      <td className="p-1">
+                      <td className="px-0.5 py-0.5">
                         <input
                           type="number"
                           min="0"
-                          className="w-16 border rounded px-1 py-1 text-sm text-center"
+                          className="w-11 border rounded px-0.5 py-0.5 text-xs text-center"
                           value={row.saldos}
                           onChange={e => updateRow(idx, 'saldos', e.target.value)}
                           placeholder="0"
                         />
                       </td>
-                      <td className="p-1 text-center">
-                        <span className="inline-block bg-green-100 text-green-800 font-bold px-2 py-1 rounded min-w-[40px]">
+                      <td className="px-0.5 py-0.5 text-center">
+                        <span className="bg-green-100 text-green-800 font-bold px-1 py-0.5 rounded text-xs">
                           {totalCerdos}
                         </span>
                       </td>
-                      <td className="p-1 text-center">
-                        <span className="inline-block bg-yellow-100 text-yellow-800 font-bold px-2 py-1 rounded min-w-[40px]">
+                      <td className="px-0.5 py-0.5 text-center">
+                        <span className="bg-yellow-100 text-yellow-800 font-bold px-1 py-0.5 rounded text-xs">
                           {numCamiones}
                         </span>
                       </td>
-                      <td className="p-1">
+                      <td className="px-0.5 py-0.5">
                         <select
-                          className="w-full border rounded px-1 py-1 text-sm"
+                          className="w-12 border rounded px-0.5 py-0.5 text-xs"
                           value={row.vaciado}
                           onChange={e => updateRow(idx, 'vaciado', e.target.value)}
                         >
@@ -337,19 +352,30 @@ export default function Home() {
                           <option value="Si">Si</option>
                         </select>
                       </td>
-                      <td className="p-1">
+                      <td className="px-0.5 py-0.5">
                         <input
                           type="text"
-                          className="w-full border rounded px-2 py-1 text-sm"
+                          className="w-24 border rounded px-1 py-0.5 text-xs"
                           value={row.observaciones}
                           onChange={e => updateRow(idx, 'observaciones', e.target.value)}
-                          placeholder="Observaciones..."
+                          placeholder="Obs..."
                         />
                       </td>
-                      <td className="p-1">
+                      <td className="px-0.5 py-0.5">
+                        <input
+                          type="number"
+                          min="1"
+                          max="53"
+                          className="w-11 border rounded px-0.5 py-0.5 text-xs text-center bg-purple-50"
+                          value={row.semana_prevision}
+                          onChange={e => updateRow(idx, 'semana_prevision', e.target.value)}
+                          placeholder={semana.toString()}
+                        />
+                      </td>
+                      <td className="px-0.5 py-0.5">
                         <button
                           onClick={() => removeRow(idx)}
-                          className="text-red-500 hover:text-red-700 text-lg px-1"
+                          className="text-red-500 hover:text-red-700 text-sm px-0.5"
                           title="Eliminar fila"
                         >
                           x
@@ -361,96 +387,112 @@ export default function Home() {
               </tbody>
             </table>
           </div>
-          <div className="p-4 flex gap-3 border-t">
+          <div className="p-2 flex gap-2 border-t">
             <button
               onClick={addRow}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm font-medium"
+              className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs font-medium"
             >
-              + Anadir fila
+              + Fila
             </button>
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+              className="px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-xs font-medium"
             >
-              {loading ? 'Enviando...' : 'Enviar Prevision'}
+              {loading ? 'Enviando...' : 'Enviar'}
             </button>
           </div>
         </div>
 
         {/* Accumulated data */}
         <div className="bg-white rounded-lg shadow">
-          <div className="p-4 border-b bg-green-50 rounded-t-lg flex items-center justify-between flex-wrap gap-3">
-            <h2 className="text-lg font-semibold text-green-800">Previsiones Acumuladas</h2>
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-600">
-                Semana:
+          <div className="p-2 border-b bg-green-50 rounded-t-lg flex items-center justify-between flex-wrap gap-2">
+            <h2 className="text-sm font-semibold text-green-800">Previsiones Acumuladas</h2>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-600">
+                Sem:
                 <input
                   type="number"
-                  className="ml-1 w-16 border rounded px-2 py-1 text-sm"
+                  className="ml-1 w-14 border rounded px-1 py-0.5 text-xs"
                   value={filterSemana}
                   onChange={e => setFilterSemana(e.target.value)}
                 />
               </label>
-              <label className="text-sm text-gray-600">
+              <label className="text-xs text-gray-600">
                 Ano:
                 <input
                   type="number"
-                  className="ml-1 w-20 border rounded px-2 py-1 text-sm"
+                  className="ml-1 w-16 border rounded px-1 py-0.5 text-xs"
                   value={filterAnio}
                   onChange={e => setFilterAnio(e.target.value)}
                 />
               </label>
               <button
                 onClick={fetchPrevisiones}
-                className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                className="px-2 py-0.5 bg-green-600 text-white rounded text-xs hover:bg-green-700"
               >
                 Filtrar
               </button>
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="p-2 text-left font-semibold">Sem.</th>
-                  <th className="p-2 text-left font-semibold">Granja</th>
-                  <th className="p-2 text-left font-semibold">No. Registro</th>
+                  <th className="px-1 py-1 text-left font-semibold">Visitador</th>
+                  <th className="px-1 py-1 text-left font-semibold">Granja</th>
+                  <th className="px-1 py-1 text-left font-semibold">No. Reg.</th>
                   {PESO_RANGES.map(r => (
-                    <th key={r.key} className="p-2 text-center font-semibold text-xs bg-blue-50">{r.label}</th>
+                    <th key={r.key} className="px-1 py-1 text-center font-semibold bg-blue-50">{r.label}</th>
                   ))}
-                  <th className="p-2 text-center font-semibold">Saldos</th>
-                  <th className="p-2 text-center font-semibold bg-green-50">Cerdos</th>
-                  <th className="p-2 text-center font-semibold bg-yellow-50">Camiones</th>
-                  <th className="p-2 text-center font-semibold">Vaciado</th>
-                  <th className="p-2 text-left font-semibold">Observaciones</th>
-                  <th className="p-2"></th>
+                  <th className="px-1 py-1 text-center font-semibold">Saldos</th>
+                  <th className="px-1 py-1 text-center font-semibold bg-green-50">Cerdos</th>
+                  <th className="px-1 py-1 text-center font-semibold bg-yellow-50">Cam.</th>
+                  <th className="px-1 py-1 text-center font-semibold">Vac.</th>
+                  <th className="px-1 py-1 text-left font-semibold">Obs.</th>
+                  <th className="px-1 py-1 text-center font-semibold bg-purple-50">S.P.</th>
+                  <th className="px-1 py-1"></th>
                 </tr>
               </thead>
               <tbody>
                 {previsiones.map(p => (
                   <tr key={p.id} className="border-b hover:bg-gray-50">
-                    <td className="p-2 text-gray-600">{p.semana}</td>
-                    <td className="p-2 font-medium">{p.granja}</td>
-                    <td className="p-2 text-xs text-gray-500">{p.no_registro}</td>
-                    <td className="p-2 text-center">{p.peso_125_130 || '-'}</td>
-                    <td className="p-2 text-center">{p.peso_120_125 || '-'}</td>
-                    <td className="p-2 text-center">{p.peso_115_120 || '-'}</td>
-                    <td className="p-2 text-center">{p.peso_110_115 || '-'}</td>
-                    <td className="p-2 text-center">{p.peso_105_110 || '-'}</td>
-                    <td className="p-2 text-center">{p.peso_100_105 || '-'}</td>
-                    <td className="p-2 text-center">{p.peso_95_100 || '-'}</td>
-                    <td className="p-2 text-center">{p.peso_menos_95 || '-'}</td>
-                    <td className="p-2 text-center">{p.saldos || '-'}</td>
-                    <td className="p-2 text-center font-bold text-green-700">{p.cerdos_prevision}</td>
-                    <td className="p-2 text-center font-bold text-yellow-700">{p.num_camiones}</td>
-                    <td className="p-2 text-center">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${p.vaciado === 'Si' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                    <td className="px-1 py-0.5 text-gray-600">{p.visitador}</td>
+                    <td className="px-1 py-0.5 font-medium">{p.granja}</td>
+                    <td className="px-1 py-0.5 text-gray-500">{p.no_registro}</td>
+                    <td className="px-1 py-0.5 text-center">{p.peso_125_130 || '-'}</td>
+                    <td className="px-1 py-0.5 text-center">{p.peso_120_125 || '-'}</td>
+                    <td className="px-1 py-0.5 text-center">{p.peso_115_120 || '-'}</td>
+                    <td className="px-1 py-0.5 text-center">{p.peso_110_115 || '-'}</td>
+                    <td className="px-1 py-0.5 text-center">{p.peso_105_110 || '-'}</td>
+                    <td className="px-1 py-0.5 text-center">{p.peso_100_105 || '-'}</td>
+                    <td className="px-1 py-0.5 text-center">{p.peso_95_100 || '-'}</td>
+                    <td className="px-1 py-0.5 text-center">{p.peso_menos_95 || '-'}</td>
+                    <td className="px-1 py-0.5 text-center">{p.saldos || '-'}</td>
+                    <td className="px-1 py-0.5 text-center font-bold text-green-700">{p.cerdos_prevision}</td>
+                    <td className="px-1 py-0.5 text-center font-bold text-yellow-700">{p.num_camiones}</td>
+                    <td className="px-1 py-0.5 text-center">
+                      <span className={`px-1 rounded text-xs ${p.vaciado === 'Si' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
                         {p.vaciado}
                       </span>
                     </td>
-                    <td className="p-2 text-gray-600">{p.observaciones}</td>
-                    <td className="p-2">
+                    <td className="px-1 py-0.5 text-gray-600 max-w-[100px] truncate">{p.observaciones}</td>
+                    <td className="px-0.5 py-0.5 text-center">
+                      <input
+                        type="number"
+                        min="1"
+                        max="53"
+                        className="w-11 border rounded px-0.5 py-0.5 text-xs text-center bg-purple-50"
+                        defaultValue={p.semana_prevision || p.semana}
+                        onBlur={e => {
+                          const val = parseInt(e.target.value)
+                          if (val && val !== (p.semana_prevision || p.semana)) {
+                            handleUpdateSemana(p.id, val)
+                          }
+                        }}
+                      />
+                    </td>
+                    <td className="px-0.5 py-0.5">
                       <button
                         onClick={() => handleDelete(p.id)}
                         className="text-red-400 hover:text-red-600 text-xs"
@@ -462,25 +504,25 @@ export default function Home() {
                   </tr>
                 ))}
                 {previsiones.length > 0 && (
-                  <tr className="bg-gray-100 font-bold">
-                    <td className="p-2" colSpan={3}>TOTALES</td>
-                    <td className="p-2 text-center">{totals.peso_125_130}</td>
-                    <td className="p-2 text-center">{totals.peso_120_125}</td>
-                    <td className="p-2 text-center">{totals.peso_115_120}</td>
-                    <td className="p-2 text-center">{totals.peso_110_115}</td>
-                    <td className="p-2 text-center">{totals.peso_105_110}</td>
-                    <td className="p-2 text-center">{totals.peso_100_105}</td>
-                    <td className="p-2 text-center">{totals.peso_95_100}</td>
-                    <td className="p-2 text-center">{totals.peso_menos_95}</td>
-                    <td className="p-2 text-center">{totals.saldos}</td>
-                    <td className="p-2 text-center text-green-700">{totals.cerdos}</td>
-                    <td className="p-2 text-center text-yellow-700">{totals.camiones}</td>
-                    <td colSpan={3}></td>
+                  <tr className="bg-gray-100 font-bold text-xs">
+                    <td className="px-1 py-1" colSpan={3}>TOTALES</td>
+                    <td className="px-1 py-1 text-center">{totals.peso_125_130}</td>
+                    <td className="px-1 py-1 text-center">{totals.peso_120_125}</td>
+                    <td className="px-1 py-1 text-center">{totals.peso_115_120}</td>
+                    <td className="px-1 py-1 text-center">{totals.peso_110_115}</td>
+                    <td className="px-1 py-1 text-center">{totals.peso_105_110}</td>
+                    <td className="px-1 py-1 text-center">{totals.peso_100_105}</td>
+                    <td className="px-1 py-1 text-center">{totals.peso_95_100}</td>
+                    <td className="px-1 py-1 text-center">{totals.peso_menos_95}</td>
+                    <td className="px-1 py-1 text-center">{totals.saldos}</td>
+                    <td className="px-1 py-1 text-center text-green-700">{totals.cerdos}</td>
+                    <td className="px-1 py-1 text-center text-yellow-700">{totals.camiones}</td>
+                    <td colSpan={4}></td>
                   </tr>
                 )}
                 {previsiones.length === 0 && (
                   <tr>
-                    <td colSpan={16} className="p-8 text-center text-gray-400">
+                    <td colSpan={18} className="p-4 text-center text-gray-400 text-xs">
                       No hay previsiones para esta semana
                     </td>
                   </tr>
@@ -489,8 +531,8 @@ export default function Home() {
             </table>
           </div>
           {previsiones.length > 0 && (
-            <div className="p-4 border-t text-sm text-gray-500">
-              Total registros: {previsiones.length} | Nr. Camiones: {totals.camiones}
+            <div className="p-2 border-t text-xs text-gray-500">
+              Total: {previsiones.length} | Camiones: {totals.camiones}
             </div>
           )}
         </div>
