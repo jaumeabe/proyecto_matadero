@@ -91,14 +91,15 @@ function calcTotals(row: FormRow) {
 
 export default function Home() {
   const now = new Date()
-  const semana = getWeekNumber(now)
+  const semanaActual = getWeekNumber(now)
   const anio = now.getFullYear()
 
+  const [semana, setSemana] = useState(semanaActual)
   const [rows, setRows] = useState<FormRow[]>([emptyRow()])
   const [previsiones, setPrevisiones] = useState<Prevision[]>([])
   const [loading, setLoading] = useState(false)
   const [dbReady, setDbReady] = useState(false)
-  const [filterSemana, setFilterSemana] = useState(semana.toString())
+  const [filterSemana, setFilterSemana] = useState(semanaActual.toString())
   const [filterAnio, setFilterAnio] = useState(anio.toString())
   const [searchGranja, setSearchGranja] = useState('')
 
@@ -251,8 +252,16 @@ export default function Home() {
 
         {/* Form */}
         <div className="bg-white rounded-lg shadow mb-3">
-          <div className="p-2 border-b bg-blue-50 rounded-t-lg">
-            <h2 className="text-sm font-semibold text-blue-800">Nueva Prevision - Semana {semana}</h2>
+          <div className="p-2 border-b bg-blue-50 rounded-t-lg flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-blue-800">Nueva Prevision - Semana</h2>
+            <input
+              type="number"
+              min="1"
+              max="53"
+              className="w-14 border rounded px-1 py-0.5 text-sm font-semibold text-blue-800 bg-white"
+              value={semana}
+              onChange={e => setSemana(parseInt(e.target.value) || semanaActual)}
+            />
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
