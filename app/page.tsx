@@ -291,7 +291,9 @@ export default function Home() {
               onChange={e => setSemana(parseInt(e.target.value) || semanaActual)}
             />
           </div>
-          <div className="overflow-x-auto">
+
+          {/* Desktop table */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-100">
@@ -316,134 +318,101 @@ export default function Home() {
                   return (
                     <tr key={idx} className="border-b hover:bg-gray-50">
                       <td className="px-0.5 py-0.5">
-                        <input
-                          type="text"
-                          className="w-20 border rounded px-1 py-0.5 text-xs"
-                          value={row.visitador}
-                          onChange={e => updateRow(idx, 'visitador', e.target.value)}
-                          placeholder="Nombre"
-                        />
+                        <input type="text" className="w-20 border rounded px-1 py-0.5 text-xs" value={row.visitador} onChange={e => updateRow(idx, 'visitador', e.target.value)} placeholder="Nombre" />
                       </td>
                       <td className="px-0.5 py-0.5">
-                        <input
-                          type="text"
-                          placeholder="Granja..."
-                          className="w-32 border rounded px-1 py-0.5 text-xs"
-                          value={row.granja}
-                          onChange={e => {
-                            updateRow(idx, 'granja', e.target.value)
-                            setSearchGranja(e.target.value)
-                          }}
-                          list={`granjas-${idx}`}
-                        />
-                        <datalist id={`granjas-${idx}`}>
-                          {filteredGranjas.map(g => (
-                            <option key={g.codigo} value={g.nombre}>
-                              {g.codigo} - {g.nombre}
-                            </option>
-                          ))}
-                        </datalist>
+                        <input type="text" placeholder="Granja..." className="w-32 border rounded px-1 py-0.5 text-xs" value={row.granja} onChange={e => { updateRow(idx, 'granja', e.target.value); setSearchGranja(e.target.value) }} list={`granjas-${idx}`} />
+                        <datalist id={`granjas-${idx}`}>{filteredGranjas.map(g => <option key={g.codigo} value={g.nombre}>{g.codigo} - {g.nombre}</option>)}</datalist>
                       </td>
                       <td className="px-0.5 py-0.5">
-                        <input
-                          type="text"
-                          className="w-20 border rounded px-1 py-0.5 text-xs bg-gray-50"
-                          value={row.no_registro}
-                          readOnly
-                          placeholder="Auto"
-                        />
+                        <input type="text" className="w-20 border rounded px-1 py-0.5 text-xs bg-gray-50" value={row.no_registro} readOnly placeholder="Auto" />
                       </td>
                       {PESO_RANGES.map(r => (
                         <td key={r.key} className="px-0.5 py-0.5">
-                          <input
-                            type="number"
-                            min="0"
-                            className="w-11 border rounded px-0.5 py-0.5 text-xs text-center"
-                            value={row[r.key as keyof FormRow]}
-                            onChange={e => updateRow(idx, r.key as keyof FormRow, e.target.value)}
-                            placeholder="0"
-                          />
+                          <input type="number" min="0" className="w-11 border rounded px-0.5 py-0.5 text-xs text-center" value={row[r.key as keyof FormRow]} onChange={e => updateRow(idx, r.key as keyof FormRow, e.target.value)} placeholder="0" />
                         </td>
                       ))}
                       <td className="px-0.5 py-0.5">
-                        <input
-                          type="number"
-                          min="0"
-                          className="w-11 border rounded px-0.5 py-0.5 text-xs text-center"
-                          value={row.saldos}
-                          onChange={e => updateRow(idx, 'saldos', e.target.value)}
-                          placeholder="0"
-                        />
+                        <input type="number" min="0" className="w-11 border rounded px-0.5 py-0.5 text-xs text-center" value={row.saldos} onChange={e => updateRow(idx, 'saldos', e.target.value)} placeholder="0" />
                       </td>
-                      <td className="px-0.5 py-0.5 text-center">
-                        <span className="bg-green-100 text-green-800 font-bold px-1 py-0.5 rounded text-xs">
-                          {totalCerdos}
-                        </span>
-                      </td>
-                      <td className="px-0.5 py-0.5 text-center">
-                        <span className="bg-yellow-100 text-yellow-800 font-bold px-1 py-0.5 rounded text-xs">
-                          {numCamiones}
-                        </span>
-                      </td>
+                      <td className="px-0.5 py-0.5 text-center"><span className="bg-green-100 text-green-800 font-bold px-1 py-0.5 rounded text-xs">{totalCerdos}</span></td>
+                      <td className="px-0.5 py-0.5 text-center"><span className="bg-yellow-100 text-yellow-800 font-bold px-1 py-0.5 rounded text-xs">{numCamiones}</span></td>
                       <td className="px-0.5 py-0.5">
-                        <select
-                          className="w-12 border rounded px-0.5 py-0.5 text-xs"
-                          value={row.vaciado}
-                          onChange={e => updateRow(idx, 'vaciado', e.target.value)}
-                        >
-                          <option value="No">No</option>
-                          <option value="Si">Si</option>
-                        </select>
+                        <select className="w-12 border rounded px-0.5 py-0.5 text-xs" value={row.vaciado} onChange={e => updateRow(idx, 'vaciado', e.target.value)}><option value="No">No</option><option value="Si">Si</option></select>
                       </td>
-                      <td className="px-0.5 py-0.5">
-                        <input
-                          type="text"
-                          className="w-24 border rounded px-1 py-0.5 text-xs"
-                          value={row.observaciones}
-                          onChange={e => updateRow(idx, 'observaciones', e.target.value)}
-                          placeholder="Obs..."
-                        />
-                      </td>
-                      <td className="px-0.5 py-0.5">
-                        <input
-                          type="number"
-                          min="1"
-                          max="53"
-                          className="w-11 border rounded px-0.5 py-0.5 text-xs text-center bg-purple-50"
-                          value={row.semana_prevision}
-                          onChange={e => updateRow(idx, 'semana_prevision', e.target.value)}
-                          placeholder={semana.toString()}
-                        />
-                      </td>
-                      <td className="px-0.5 py-0.5">
-                        <button
-                          onClick={() => removeRow(idx)}
-                          className="text-red-500 hover:text-red-700 text-sm px-0.5"
-                          title="Eliminar fila"
-                        >
-                          x
-                        </button>
-                      </td>
+                      <td className="px-0.5 py-0.5"><input type="text" className="w-24 border rounded px-1 py-0.5 text-xs" value={row.observaciones} onChange={e => updateRow(idx, 'observaciones', e.target.value)} placeholder="Obs..." /></td>
+                      <td className="px-0.5 py-0.5"><input type="number" min="1" max="53" className="w-11 border rounded px-0.5 py-0.5 text-xs text-center bg-purple-50" value={row.semana_prevision} onChange={e => updateRow(idx, 'semana_prevision', e.target.value)} placeholder={semana.toString()} /></td>
+                      <td className="px-0.5 py-0.5"><button onClick={() => removeRow(idx)} className="text-red-500 hover:text-red-700 text-sm px-0.5" title="Eliminar fila">x</button></td>
                     </tr>
                   )
                 })}
               </tbody>
             </table>
           </div>
+
+          {/* Mobile cards */}
+          <div className="lg:hidden p-2 space-y-3">
+            {rows.map((row, idx) => {
+              const { totalCerdos, numCamiones } = calcTotals(row)
+              return (
+                <div key={idx} className="border rounded-lg p-3 bg-gray-50 relative">
+                  <button onClick={() => removeRow(idx)} className="absolute top-1 right-2 text-red-500 hover:text-red-700 text-lg font-bold">x</button>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <div>
+                      <label className="text-xs text-gray-500 font-medium">Visitador</label>
+                      <input type="text" className="w-full border rounded px-2 py-1.5 text-sm" value={row.visitador} onChange={e => updateRow(idx, 'visitador', e.target.value)} placeholder="Nombre" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 font-medium">Vaciado</label>
+                      <select className="w-full border rounded px-2 py-1.5 text-sm" value={row.vaciado} onChange={e => updateRow(idx, 'vaciado', e.target.value)}><option value="No">No</option><option value="Si">Si</option></select>
+                    </div>
+                  </div>
+                  <div className="mb-2">
+                    <label className="text-xs text-gray-500 font-medium">Granja</label>
+                    <input type="text" placeholder="Buscar granja..." className="w-full border rounded px-2 py-1.5 text-sm" value={row.granja} onChange={e => { updateRow(idx, 'granja', e.target.value); setSearchGranja(e.target.value) }} list={`granjas-m-${idx}`} />
+                    <datalist id={`granjas-m-${idx}`}>{filteredGranjas.map(g => <option key={g.codigo} value={g.nombre}>{g.codigo} - {g.nombre}</option>)}</datalist>
+                  </div>
+                  <div className="mb-2">
+                    <label className="text-xs text-gray-500 font-medium">No. Registro</label>
+                    <input type="text" className="w-full border rounded px-2 py-1.5 text-sm bg-white" value={row.no_registro} readOnly placeholder="Auto" />
+                  </div>
+                  <div className="mb-2">
+                    <label className="text-xs text-gray-500 font-medium block mb-1">Pesos (No. cerdos)</label>
+                    <div className="grid grid-cols-4 gap-1">
+                      {PESO_RANGES.map(r => (
+                        <div key={r.key}>
+                          <label className="text-[10px] text-gray-400 block text-center">{r.label}</label>
+                          <input type="number" min="0" className="w-full border rounded px-1 py-1 text-sm text-center" value={row[r.key as keyof FormRow]} onChange={e => updateRow(idx, r.key as keyof FormRow, e.target.value)} placeholder="0" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    <div>
+                      <label className="text-xs text-gray-500 font-medium">Saldos</label>
+                      <input type="number" min="0" className="w-full border rounded px-2 py-1.5 text-sm text-center" value={row.saldos} onChange={e => updateRow(idx, 'saldos', e.target.value)} placeholder="0" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 font-medium">Semana</label>
+                      <input type="number" min="1" max="53" className="w-full border rounded px-2 py-1.5 text-sm text-center bg-purple-50" value={row.semana_prevision} onChange={e => updateRow(idx, 'semana_prevision', e.target.value)} placeholder={semana.toString()} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 font-medium">Observaciones</label>
+                      <input type="text" className="w-full border rounded px-2 py-1.5 text-sm" value={row.observaciones} onChange={e => updateRow(idx, 'observaciones', e.target.value)} placeholder="Obs..." />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 pt-1 border-t">
+                    <span className="bg-green-100 text-green-800 font-bold px-2 py-1 rounded text-sm">Cerdos: {totalCerdos}</span>
+                    <span className="bg-yellow-100 text-yellow-800 font-bold px-2 py-1 rounded text-sm">Camiones: {numCamiones}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
           <div className="p-2 flex gap-2 border-t">
-            <button
-              onClick={addRow}
-              className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs font-medium"
-            >
-              + Fila
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-xs font-medium"
-            >
-              {loading ? 'Enviando...' : 'Enviar'}
-            </button>
+            <button onClick={addRow} className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs font-medium">+ Fila</button>
+            <button onClick={handleSubmit} disabled={loading} className="px-4 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-xs font-medium">{loading ? 'Enviando...' : 'Enviar'}</button>
           </div>
         </div>
 
@@ -478,7 +447,8 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <div className="overflow-x-auto">
+          {/* Desktop table */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-100">
@@ -515,34 +485,14 @@ export default function Home() {
                     <td className="px-1 py-0.5 text-center font-bold text-green-700">{p.cerdos_prevision}</td>
                     <td className="px-1 py-0.5 text-center font-bold text-yellow-700">{p.num_camiones}</td>
                     <td className="px-1 py-0.5 text-center">
-                      <span className={`px-1 rounded text-xs ${p.vaciado === 'Si' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                        {p.vaciado}
-                      </span>
+                      <span className={`px-1 rounded text-xs ${p.vaciado === 'Si' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>{p.vaciado}</span>
                     </td>
                     <td className="px-1 py-0.5 text-gray-600 max-w-[100px] truncate">{p.observaciones}</td>
                     <td className="px-0.5 py-0.5 text-center">
-                      <input
-                        type="number"
-                        min="1"
-                        max="53"
-                        className="w-11 border rounded px-0.5 py-0.5 text-xs text-center bg-purple-50"
-                        defaultValue={p.semana_prevision || p.semana}
-                        onBlur={e => {
-                          const val = parseInt(e.target.value)
-                          if (val && val !== (p.semana_prevision || p.semana)) {
-                            handleUpdateSemana(p.id, val)
-                          }
-                        }}
-                      />
+                      <input type="number" min="1" max="53" className="w-11 border rounded px-0.5 py-0.5 text-xs text-center bg-purple-50" defaultValue={p.semana_prevision || p.semana} onBlur={e => { const val = parseInt(e.target.value); if (val && val !== (p.semana_prevision || p.semana)) handleUpdateSemana(p.id, val) }} />
                     </td>
                     <td className="px-0.5 py-0.5">
-                      <button
-                        onClick={() => handleDelete(p.id)}
-                        className="text-red-400 hover:text-red-600 text-xs"
-                        title="Eliminar"
-                      >
-                        x
-                      </button>
+                      <button onClick={() => handleDelete(p.id)} className="text-red-400 hover:text-red-600 text-xs" title="Eliminar">x</button>
                     </td>
                   </tr>
                 ))}
@@ -564,14 +514,61 @@ export default function Home() {
                   </tr>
                 )}
                 {previsiones.length === 0 && (
-                  <tr>
-                    <td colSpan={18} className="p-4 text-center text-gray-400 text-xs">
-                      No hay previsiones para esta semana
-                    </td>
-                  </tr>
+                  <tr><td colSpan={18} className="p-4 text-center text-gray-400 text-xs">No hay previsiones para esta semana</td></tr>
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="lg:hidden p-2 space-y-2">
+            {previsiones.length === 0 && (
+              <p className="text-center text-gray-400 text-sm py-4">No hay previsiones para esta semana</p>
+            )}
+            {previsiones.map(p => (
+              <div key={p.id} className="border rounded-lg p-3 bg-gray-50 relative">
+                <button onClick={() => handleDelete(p.id)} className="absolute top-1 right-2 text-red-400 hover:text-red-600 text-lg font-bold">x</button>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-bold text-sm">{p.granja}</span>
+                  {p.visitador && <span className="text-xs text-gray-500">({p.visitador})</span>}
+                </div>
+                <p className="text-xs text-gray-400 mb-2">{p.no_registro}</p>
+                <div className="grid grid-cols-4 gap-1 mb-2 text-xs">
+                  {PESO_RANGES.map(r => {
+                    const val = p[r.key as keyof Prevision] as number
+                    return val ? (
+                      <div key={r.key} className="bg-blue-50 rounded px-1 py-0.5 text-center">
+                        <span className="text-[10px] text-gray-400 block">{r.label}</span>
+                        <span className="font-medium">{val}</span>
+                      </div>
+                    ) : null
+                  })}
+                  {p.saldos > 0 && (
+                    <div className="bg-gray-100 rounded px-1 py-0.5 text-center">
+                      <span className="text-[10px] text-gray-400 block">Saldos</span>
+                      <span className="font-medium">{p.saldos}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded text-xs">Cerdos: {p.cerdos_prevision}</span>
+                  <span className="bg-yellow-100 text-yellow-800 font-bold px-2 py-0.5 rounded text-xs">Cam: {p.num_camiones}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs ${p.vaciado === 'Si' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}`}>{p.vaciado === 'Si' ? 'Vaciado' : 'No vaciado'}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-purple-600">Sem:</span>
+                    <input type="number" min="1" max="53" className="w-12 border rounded px-1 py-0.5 text-xs text-center bg-purple-50" defaultValue={p.semana_prevision || p.semana} onBlur={e => { const val = parseInt(e.target.value); if (val && val !== (p.semana_prevision || p.semana)) handleUpdateSemana(p.id, val) }} />
+                  </div>
+                </div>
+                {p.observaciones && <p className="text-xs text-gray-500 mt-1">{p.observaciones}</p>}
+              </div>
+            ))}
+            {previsiones.length > 0 && (
+              <div className="bg-gray-100 rounded-lg p-3 font-bold text-sm">
+                <span className="text-green-700">Cerdos: {totals.cerdos}</span>
+                <span className="mx-2">|</span>
+                <span className="text-yellow-700">Camiones: {rd(totals.camiones)}</span>
+              </div>
+            )}
           </div>
           {previsiones.length > 0 && (
             <div className="p-2 border-t text-xs text-gray-500">
