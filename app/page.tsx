@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { granjas } from '@/lib/granjas'
 
+const VISITADORES = ['SERGIO', 'LIVIU', 'BOGDAN', 'VALENTIN', 'JULIA', 'ALEIX', 'JORGE SCARLAT', 'JORDI', 'VANESSA', 'PAU', 'MARIA', 'EDUARD', 'ALICIA']
+
 const PESO_RANGES = [
   { key: 'peso_125_130', label: '125-130', midpoint: 127.5 },
   { key: 'peso_120_125', label: '120-125', midpoint: 122.5 },
@@ -318,7 +320,7 @@ export default function Home() {
                   return (
                     <tr key={idx} className="border-b hover:bg-gray-50">
                       <td className="px-0.5 py-0.5">
-                        <input type="text" className="w-20 border rounded px-1 py-0.5 text-xs" value={row.visitador} onChange={e => updateRow(idx, 'visitador', e.target.value)} placeholder="Nombre" />
+                        <input type="text" className="w-20 border rounded px-1 py-0.5 text-xs" value={row.visitador} onChange={e => updateRow(idx, 'visitador', e.target.value)} placeholder="Nombre" list="visitadores-list" />
                       </td>
                       <td className="px-0.5 py-0.5">
                         <input type="text" placeholder="Granja..." className="w-32 border rounded px-1 py-0.5 text-xs" value={row.granja} onChange={e => { updateRow(idx, 'granja', e.target.value); setSearchGranja(e.target.value) }} list={`granjas-${idx}`} />
@@ -350,6 +352,8 @@ export default function Home() {
             </table>
           </div>
 
+          <datalist id="visitadores-list">{VISITADORES.map(v => <option key={v} value={v} />)}</datalist>
+
           {/* Mobile cards */}
           <div className="lg:hidden p-2 space-y-3">
             {rows.map((row, idx) => {
@@ -360,7 +364,7 @@ export default function Home() {
                   <div className="grid grid-cols-2 gap-2 mb-2">
                     <div>
                       <label className="text-xs text-gray-500 font-medium">Visitador</label>
-                      <input type="text" className="w-full border rounded px-2 py-1.5 text-sm" value={row.visitador} onChange={e => updateRow(idx, 'visitador', e.target.value)} placeholder="Nombre" />
+                      <input type="text" className="w-full border rounded px-2 py-1.5 text-sm" value={row.visitador} onChange={e => updateRow(idx, 'visitador', e.target.value)} placeholder="Nombre" list="visitadores-list" />
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 font-medium">Vaciado</label>
