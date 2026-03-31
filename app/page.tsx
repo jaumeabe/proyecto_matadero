@@ -153,7 +153,10 @@ export default function Home() {
   }
 
   function addRow() {
-    setRows(prev => [...prev, emptyRow()])
+    setRows(prev => {
+      const lastVisitador = prev.length > 0 ? prev[prev.length - 1].visitador : ''
+      return [...prev, { ...emptyRow(), visitador: lastVisitador }]
+    })
   }
 
   function removeRow(idx: number) {
