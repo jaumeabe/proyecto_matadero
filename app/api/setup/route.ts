@@ -11,6 +11,8 @@ export async function POST() {
       `ALTER TABLE previsiones ADD COLUMN IF NOT EXISTS semana_prevision INT DEFAULT 0`,
       `ALTER TABLE previsiones ADD COLUMN IF NOT EXISTS saldos INT DEFAULT 0`,
       `ALTER TABLE previsiones RENAME COLUMN baldos TO saldos`,
+      `ALTER TABLE previsiones ADD COLUMN IF NOT EXISTS peso_135_140 INT DEFAULT 0`,
+      `ALTER TABLE previsiones ADD COLUMN IF NOT EXISTS peso_130_135 INT DEFAULT 0`,
     ]
     for (const m of migrations) {
       try { await sql(m) } catch { /* column may already exist or rename already done */ }
