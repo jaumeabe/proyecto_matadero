@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { granjas } from '@/lib/granjas'
 
-const VISITADORES = ['SERGIO', 'LIVIU', 'BOGDAN', 'VALENTIN', 'JULIA', 'ALEIX', 'JORGE SCARLAT', 'JORDI', 'VANESSA', 'PAU', 'MARIA', 'EDUARD', 'ALICIA']
+const VISITADORES = ['SERGIO', 'LIVIU', 'BOGDAN', 'VALENTIN', 'JULIA', 'JORGE SCARLAT', 'JORDI', 'VANESSA', 'PAU', 'MARIA', 'EDUARD', 'ALICIA']
 
 const PESO_RANGES = [
   { key: 'peso_125_130', label: '125-130', midpoint: 127.5 },
