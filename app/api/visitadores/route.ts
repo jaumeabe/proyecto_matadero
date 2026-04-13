@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const sql = getDb()
     const rows = await sql('SELECT nombre FROM visitadores ORDER BY nombre ASC')
-    return NextResponse.json({ success: true, data: rows.map((r: { nombre: string }) => r.nombre) })
+    return NextResponse.json({ success: true, data: (rows as { nombre: string }[]).map(r => r.nombre) })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error desconocido'
     return NextResponse.json({ success: false, error: message }, { status: 500 })
