@@ -6,6 +6,8 @@ import { granjas } from '@/lib/granjas'
 const VISITADORES = ['SERGIO', 'LIVIU', 'BOGDAN', 'VALENTIN', 'JULIA', 'JORGE SCARLAT', 'JORDI', 'VANESSA', 'PAU', 'MARIA', 'EDUARD', 'ALICIA']
 
 const PESO_RANGES = [
+  { key: 'peso_135_140', label: '135-140', midpoint: 137.5 },
+  { key: 'peso_130_135', label: '130-135', midpoint: 132.5 },
   { key: 'peso_125_130', label: '125-130', midpoint: 127.5 },
   { key: 'peso_120_125', label: '120-125', midpoint: 122.5 },
   { key: 'peso_115_120', label: '115-120', midpoint: 117.5 },
@@ -17,6 +19,8 @@ const PESO_RANGES = [
 ]
 
 const ANIMALS_PER_TRUCK: Record<string, number> = {
+  peso_135_140: 170,
+  peso_130_135: 180,
   peso_125_130: 190,
   peso_120_125: 200,
   peso_115_120: 210,
@@ -39,6 +43,8 @@ interface FormRow {
   granja: string
   codigo_granja: string
   no_registro: string
+  peso_135_140: string
+  peso_130_135: string
   peso_125_130: string
   peso_120_125: string
   peso_115_120: string
@@ -61,6 +67,8 @@ interface Prevision {
   granja: string
   codigo_granja: string
   no_registro: string
+  peso_135_140: number
+  peso_130_135: number
   peso_125_130: number
   peso_120_125: number
   peso_115_120: number
@@ -81,6 +89,7 @@ interface Prevision {
 function emptyRow(): FormRow {
   return {
     visitador: '', granja: '', codigo_granja: '', no_registro: '',
+    peso_135_140: '', peso_130_135: '',
     peso_125_130: '', peso_120_125: '', peso_115_120: '', peso_110_115: '',
     peso_105_110: '', peso_100_105: '', peso_95_100: '', peso_menos_95: '',
     saldos: '', vaciado: 'No', observaciones: '', semana_prevision: ''
@@ -112,7 +121,24 @@ export default function Home() {
   const [dbReady, setDbReady] = useState(false)
   const [filterSemana, setFilterSemana] = useState(semanaActual.toString())
   const [filterAnio, setFilterAnio] = useState(anio.toString())
+  const [filterVisitador, setFilterVisitador] = useState('')
   const [searchGranja, setSearchGranja] = useState('')
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editRow, setEditRow] = useState<FormRow>(emptyRow())
+  const [visitadores, setVisitadores] = useState<string[]>(VISITADORES)
+  const [showAdminVisitadores, setShowAdminVisitadores] = useState(false)
+  const [nuevoVisitador, setNuevoVisitador] = useState('')
+  const [adminPassword, setAdminPassword] = useState('')
+  const [adminAuthed, setAdminAuthed] = useState(false)
+  const [adminError, setAdminError] = useState('')
+
+  const fetchVisitadores = useCallback(async () => {
+    try {
+      const res = await fetch('/api/visitadores')
+      const data = await res.json()
+      if (data.success && data.data.length > 0) setVisitadores(data.data)
+    } catch { /* ignore */ }
+  }, [])
 
   const fetchPrevisiones = useCallback(async () => {
     try {
@@ -131,10 +157,38 @@ export default function Home() {
         await fetch('/api/setup', { method: 'POST' })
         setDbReady(true)
         fetchPrevisiones()
+        fetchVisitadores()
       } catch { setDbReady(false) }
     }
     setup()
-  }, [fetchPrevisiones])
+  }, [fetchPrevisiones, fetchVisitadores])
+
+  function openAdminVisitadores() {
+    setAdminPassword('')
+    setAdminAuthed(false)
+    setAdminError('')
+    setShowAdminVisitadores(true)
+  }
+
+  async function checkAdminPassword() {
+    const res = await fetch('/api/visitadores', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword }, body: JSON.stringify({ nombre: '__test__' }) })
+    if (res.status === 401) { setAdminError('Contraseña incorrecta'); return }
+    setAdminAuthed(true)
+    setAdminError('')
+    fetchVisitadores()
+  }
+
+  async function addVisitador() {
+    if (!nuevoVisitador.trim()) return
+    await fetch('/api/visitadores', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword }, body: JSON.stringify({ nombre: nuevoVisitador }) })
+    setNuevoVisitador('')
+    fetchVisitadores()
+  }
+
+  async function deleteVisitador(nombre: string) {
+    await fetch(`/api/visitadores?nombre=${encodeURIComponent(nombre)}`, { method: 'DELETE', headers: { 'x-admin-password': adminPassword } })
+    fetchVisitadores()
+  }
 
   function updateRow(idx: number, field: keyof FormRow, value: string) {
     setRows(prev => {
@@ -180,6 +234,8 @@ export default function Home() {
             granja: row.granja,
             codigo_granja: row.codigo_granja,
             no_registro: row.no_registro,
+            peso_135_140: parseInt(row.peso_135_140) || 0,
+            peso_130_135: parseInt(row.peso_130_135) || 0,
             peso_125_130: parseInt(row.peso_125_130) || 0,
             peso_120_125: parseInt(row.peso_120_125) || 0,
             peso_115_120: parseInt(row.peso_115_120) || 0,
@@ -228,12 +284,102 @@ export default function Home() {
     } catch { /* ignore */ }
   }
 
+  function startEdit(p: Prevision) {
+    setEditingId(p.id)
+    setEditRow({
+      visitador: p.visitador || '',
+      granja: p.granja || '',
+      codigo_granja: p.codigo_granja || '',
+      no_registro: p.no_registro || '',
+      peso_135_140: p.peso_135_140 ? p.peso_135_140.toString() : '',
+      peso_130_135: p.peso_130_135 ? p.peso_130_135.toString() : '',
+      peso_125_130: p.peso_125_130 ? p.peso_125_130.toString() : '',
+      peso_120_125: p.peso_120_125 ? p.peso_120_125.toString() : '',
+      peso_115_120: p.peso_115_120 ? p.peso_115_120.toString() : '',
+      peso_110_115: p.peso_110_115 ? p.peso_110_115.toString() : '',
+      peso_105_110: p.peso_105_110 ? p.peso_105_110.toString() : '',
+      peso_100_105: p.peso_100_105 ? p.peso_100_105.toString() : '',
+      peso_95_100: p.peso_95_100 ? p.peso_95_100.toString() : '',
+      peso_menos_95: p.peso_menos_95 ? p.peso_menos_95.toString() : '',
+      saldos: p.saldos ? p.saldos.toString() : '',
+      vaciado: p.vaciado || 'No',
+      observaciones: p.observaciones || '',
+      semana_prevision: (p.semana_prevision || p.semana).toString(),
+    })
+  }
+
+  function updateEditRow(field: keyof FormRow, value: string) {
+    setEditRow(prev => {
+      const next = { ...prev, [field]: value }
+      if (field === 'granja') {
+        const found = granjas.find(g => g.nombre === value)
+        if (found) {
+          next.codigo_granja = found.codigo
+          next.no_registro = found.registro
+        }
+      }
+      return next
+    })
+  }
+
+  async function handleSaveEdit() {
+    if (!editingId) return
+    setLoading(true)
+    try {
+      const { totalCerdos, numCamiones } = calcTotals(editRow)
+      const res = await fetch('/api/previsiones', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingId,
+          visitador: editRow.visitador,
+          granja: editRow.granja,
+          codigo_granja: editRow.codigo_granja,
+          no_registro: editRow.no_registro,
+          peso_135_140: parseInt(editRow.peso_135_140) || 0,
+          peso_130_135: parseInt(editRow.peso_130_135) || 0,
+          peso_125_130: parseInt(editRow.peso_125_130) || 0,
+          peso_120_125: parseInt(editRow.peso_120_125) || 0,
+          peso_115_120: parseInt(editRow.peso_115_120) || 0,
+          peso_110_115: parseInt(editRow.peso_110_115) || 0,
+          peso_105_110: parseInt(editRow.peso_105_110) || 0,
+          peso_100_105: parseInt(editRow.peso_100_105) || 0,
+          peso_95_100: parseInt(editRow.peso_95_100) || 0,
+          peso_menos_95: parseInt(editRow.peso_menos_95) || 0,
+          saldos: parseInt(editRow.saldos) || 0,
+          cerdos_prevision: totalCerdos,
+          num_camiones: numCamiones,
+          vaciado: editRow.vaciado,
+          observaciones: editRow.observaciones,
+          semana_prevision: parseInt(editRow.semana_prevision) || 0,
+        })
+      })
+      const result = await res.json()
+      if (!result.success) {
+        alert('Error al guardar: ' + result.error)
+      } else {
+        setEditingId(null)
+        fetchPrevisiones()
+      }
+    } catch (err) {
+      alert('Error al guardar: ' + (err instanceof Error ? err.message : 'Error desconocido'))
+    }
+    setLoading(false)
+  }
+
   const filteredGranjas = searchGranja
     ? granjas.filter(g => g.nombre.toLowerCase().includes(searchGranja.toLowerCase()) || g.codigo.toLowerCase().includes(searchGranja.toLowerCase()))
     : granjas
 
+  // Filter previsiones by visitador
+  const filteredPrevisiones = filterVisitador
+    ? previsiones.filter(p => p.visitador === filterVisitador)
+    : previsiones
+
   // Totals for the accumulated table
-  const totals = previsiones.reduce((acc, p) => ({
+  const totals = filteredPrevisiones.reduce((acc, p) => ({
+    peso_135_140: acc.peso_135_140 + (p.peso_135_140 || 0),
+    peso_130_135: acc.peso_130_135 + (p.peso_130_135 || 0),
     peso_125_130: acc.peso_125_130 + p.peso_125_130,
     peso_120_125: acc.peso_120_125 + p.peso_120_125,
     peso_115_120: acc.peso_115_120 + p.peso_115_120,
@@ -245,20 +391,24 @@ export default function Home() {
     saldos: acc.saldos + p.saldos,
     cerdos: acc.cerdos + p.cerdos_prevision,
     camiones: acc.camiones + Number(p.num_camiones),
-  }), { peso_125_130: 0, peso_120_125: 0, peso_115_120: 0, peso_110_115: 0, peso_105_110: 0, peso_100_105: 0, peso_95_100: 0, peso_menos_95: 0, saldos: 0, cerdos: 0, camiones: 0 })
+  }), { peso_135_140: 0, peso_130_135: 0, peso_125_130: 0, peso_120_125: 0, peso_115_120: 0, peso_110_115: 0, peso_105_110: 0, peso_100_105: 0, peso_95_100: 0, peso_menos_95: 0, saldos: 0, cerdos: 0, camiones: 0 })
 
   // Truck breakdown per farm
   const rd = (n: number) => Math.round(n * 100) / 100
-  const farmTrucks = previsiones.map(p => {
+  const farmTrucks = filteredPrevisiones.map(p => {
     const below115 = p.peso_110_115 + p.peso_105_110 + p.peso_100_105 + p.peso_95_100 + p.peso_menos_95
+    const t135 = rd((p.peso_135_140 || 0) / 170)
+    const t130 = rd((p.peso_130_135 || 0) / 180)
     const t125 = rd(p.peso_125_130 / 190)
     const t120 = rd(p.peso_120_125 / 200)
     const t115 = rd(p.peso_115_120 / 210)
     const tBelow = rd(below115 / 220)
-    const total = rd(t125 + t120 + t115 + tBelow)
-    return { granja: p.granja, t125, t120, t115, tBelow, total }
+    const total = rd(t135 + t130 + t125 + t120 + t115 + tBelow)
+    return { granja: p.granja, t135, t130, t125, t120, t115, tBelow, total }
   })
   const farmTruckTotals = {
+    t135: rd(farmTrucks.reduce((s, f) => s + f.t135, 0)),
+    t130: rd(farmTrucks.reduce((s, f) => s + f.t130, 0)),
     t125: rd(farmTrucks.reduce((s, f) => s + f.t125, 0)),
     t120: rd(farmTrucks.reduce((s, f) => s + f.t120, 0)),
     t115: rd(farmTrucks.reduce((s, f) => s + f.t115, 0)),
@@ -355,7 +505,7 @@ export default function Home() {
             </table>
           </div>
 
-          <datalist id="visitadores-list">{VISITADORES.map(v => <option key={v} value={v} />)}</datalist>
+          <datalist id="visitadores-list">{visitadores.map(v => <option key={v} value={v} />)}</datalist>
 
           {/* Mobile cards */}
           <div className="lg:hidden p-2 space-y-3">
@@ -417,17 +567,52 @@ export default function Home() {
             })}
           </div>
 
-          <div className="p-2 flex gap-2 border-t">
+          <div className="p-2 flex gap-2 border-t flex-wrap">
             <button onClick={addRow} className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs font-medium">+ Fila</button>
             <button onClick={handleSubmit} disabled={loading} className="px-4 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-xs font-medium">{loading ? 'Enviando...' : 'Enviar'}</button>
+            <button onClick={openAdminVisitadores} className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 text-xs font-medium ml-auto">Gestionar visitadores</button>
           </div>
+
+          {/* Modal gestionar visitadores */}
+          {showAdminVisitadores && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-xl p-4 w-80 max-h-[80vh] flex flex-col">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-sm">Gestionar visitadores</h3>
+                  <button onClick={() => setShowAdminVisitadores(false)} className="text-gray-400 hover:text-gray-600 text-lg font-bold">×</button>
+                </div>
+                {!adminAuthed ? (
+                  <div className="flex flex-col gap-2">
+                    <input type="password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && checkAdminPassword()} placeholder="Contraseña de administrador" className="border rounded px-2 py-1.5 text-sm" autoFocus />
+                    {adminError && <p className="text-red-500 text-xs">{adminError}</p>}
+                    <button onClick={checkAdminPassword} className="px-3 py-1.5 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">Entrar</button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-2 mb-3">
+                      <input type="text" value={nuevoVisitador} onChange={e => setNuevoVisitador(e.target.value)} onKeyDown={e => e.key === 'Enter' && addVisitador()} placeholder="Nuevo visitador..." className="flex-1 border rounded px-2 py-1 text-xs" />
+                      <button onClick={addVisitador} className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">Añadir</button>
+                    </div>
+                    <ul className="overflow-y-auto flex-1 divide-y">
+                      {visitadores.map(v => (
+                        <li key={v} className="flex items-center justify-between py-1.5 px-1">
+                          <span className="text-sm">{v}</span>
+                          <button onClick={() => deleteVisitador(v)} className="text-red-500 hover:text-red-700 text-xs px-2">Eliminar</button>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Accumulated data */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-2 border-b bg-green-50 rounded-t-lg flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-sm font-semibold text-green-800">Previsiones Acumuladas</h2>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <label className="text-xs text-gray-600">
                 Sem:
                 <input
@@ -446,12 +631,32 @@ export default function Home() {
                   onChange={e => setFilterAnio(e.target.value)}
                 />
               </label>
+              <label className="text-xs text-gray-600">
+                Visitador:
+                <select
+                  className="ml-1 border rounded px-1 py-0.5 text-xs"
+                  value={filterVisitador}
+                  onChange={e => setFilterVisitador(e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  {visitadores.map(v => (
+                    <option key={v} value={v}>{v}</option>
+                  ))}
+                </select>
+              </label>
               <button
                 onClick={fetchPrevisiones}
                 className="px-2 py-0.5 bg-green-600 text-white rounded text-xs hover:bg-green-700"
               >
                 Filtrar
               </button>
+              <a
+                href={`/api/export?${filterSemana ? `semana=${filterSemana}&` : ''}${filterAnio ? `anio=${filterAnio}&` : ''}${filterVisitador ? `visitador=${encodeURIComponent(filterVisitador)}` : ''}`}
+                download
+                className="px-2 py-0.5 bg-emerald-600 text-white rounded text-xs hover:bg-emerald-700"
+              >
+                Exportar Excel
+              </a>
             </div>
           </div>
           {/* Desktop table */}
@@ -475,53 +680,78 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody>
-                {previsiones.map(p => (
-                  <tr key={p.id} className="border-b hover:bg-gray-50">
-                    <td className="px-1 py-0.5 text-gray-600">{p.visitador}</td>
-                    <td className="px-1 py-0.5 font-medium">{p.granja}</td>
-                    <td className="px-1 py-0.5 text-gray-500">{p.no_registro}</td>
-                    <td className="px-1 py-0.5 text-center">{p.peso_125_130 || '-'}</td>
-                    <td className="px-1 py-0.5 text-center">{p.peso_120_125 || '-'}</td>
-                    <td className="px-1 py-0.5 text-center">{p.peso_115_120 || '-'}</td>
-                    <td className="px-1 py-0.5 text-center">{p.peso_110_115 || '-'}</td>
-                    <td className="px-1 py-0.5 text-center">{p.peso_105_110 || '-'}</td>
-                    <td className="px-1 py-0.5 text-center">{p.peso_100_105 || '-'}</td>
-                    <td className="px-1 py-0.5 text-center">{p.peso_95_100 || '-'}</td>
-                    <td className="px-1 py-0.5 text-center">{p.peso_menos_95 || '-'}</td>
-                    <td className="px-1 py-0.5 text-center">{p.saldos || '-'}</td>
-                    <td className="px-1 py-0.5 text-center font-bold text-green-700">{p.cerdos_prevision}</td>
-                    <td className="px-1 py-0.5 text-center font-bold text-yellow-700">{p.num_camiones}</td>
-                    <td className="px-1 py-0.5 text-center">
-                      <span className={`px-1 rounded text-xs ${p.vaciado === 'Si' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>{p.vaciado}</span>
-                    </td>
-                    <td className="px-1 py-0.5 text-gray-600 max-w-[100px] truncate">{p.observaciones}</td>
-                    <td className="px-0.5 py-0.5 text-center">
-                      <input type="number" min="1" max="53" className="w-11 border rounded px-0.5 py-0.5 text-xs text-center bg-purple-50" defaultValue={p.semana_prevision || p.semana} onBlur={e => { const val = parseInt(e.target.value); if (val && val !== (p.semana_prevision || p.semana)) handleUpdateSemana(p.id, val) }} />
-                    </td>
-                    <td className="px-0.5 py-0.5">
-                      <button onClick={() => handleDelete(p.id)} className="text-red-400 hover:text-red-600 text-xs" title="Eliminar">x</button>
-                    </td>
-                  </tr>
+                {filteredPrevisiones.map(p => (
+                  editingId === p.id ? (
+                    <tr key={p.id} className="border-b bg-yellow-50">
+                      <td className="px-0.5 py-0.5">
+                        <input type="text" className="w-20 border rounded px-1 py-0.5 text-xs" value={editRow.visitador} onChange={e => updateEditRow('visitador', e.target.value)} list="visitadores-list" />
+                      </td>
+                      <td className="px-0.5 py-0.5">
+                        <input type="text" className="w-32 border rounded px-1 py-0.5 text-xs" value={editRow.granja} onChange={e => updateEditRow('granja', e.target.value)} list="granjas-edit" />
+                        <datalist id="granjas-edit">{granjas.map(g => <option key={g.codigo} value={g.nombre}>{g.codigo} - {g.nombre}</option>)}</datalist>
+                      </td>
+                      <td className="px-0.5 py-0.5">
+                        <input type="text" className="w-20 border rounded px-1 py-0.5 text-xs bg-gray-50" value={editRow.no_registro} readOnly />
+                      </td>
+                      {PESO_RANGES.map(r => (
+                        <td key={r.key} className="px-0.5 py-0.5">
+                          <input type="number" min="0" className="w-11 border rounded px-0.5 py-0.5 text-xs text-center" value={editRow[r.key as keyof FormRow]} onChange={e => updateEditRow(r.key as keyof FormRow, e.target.value)} placeholder="0" />
+                        </td>
+                      ))}
+                      <td className="px-0.5 py-0.5">
+                        <input type="number" min="0" className="w-11 border rounded px-0.5 py-0.5 text-xs text-center" value={editRow.saldos} onChange={e => updateEditRow('saldos', e.target.value)} placeholder="0" />
+                      </td>
+                      <td className="px-0.5 py-0.5 text-center"><span className="bg-green-100 text-green-800 font-bold px-1 py-0.5 rounded text-xs">{calcTotals(editRow).totalCerdos}</span></td>
+                      <td className="px-0.5 py-0.5 text-center"><span className="bg-yellow-100 text-yellow-800 font-bold px-1 py-0.5 rounded text-xs">{calcTotals(editRow).numCamiones}</span></td>
+                      <td className="px-0.5 py-0.5">
+                        <select className="w-12 border rounded px-0.5 py-0.5 text-xs" value={editRow.vaciado} onChange={e => updateEditRow('vaciado', e.target.value)}><option value="No">No</option><option value="Si">Si</option></select>
+                      </td>
+                      <td className="px-0.5 py-0.5"><input type="text" className="w-24 border rounded px-1 py-0.5 text-xs" value={editRow.observaciones} onChange={e => updateEditRow('observaciones', e.target.value)} /></td>
+                      <td className="px-0.5 py-0.5"><input type="number" min="1" max="53" className="w-11 border rounded px-0.5 py-0.5 text-xs text-center bg-purple-50" value={editRow.semana_prevision} onChange={e => updateEditRow('semana_prevision', e.target.value)} /></td>
+                      <td className="px-0.5 py-0.5 whitespace-nowrap">
+                        <button onClick={handleSaveEdit} disabled={loading} className="text-green-600 hover:text-green-800 text-xs font-bold mr-1" title="Guardar">{loading ? '...' : '✓'}</button>
+                        <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600 text-xs" title="Cancelar">✗</button>
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr key={p.id} className="border-b hover:bg-gray-50">
+                      <td className="px-1 py-0.5 text-gray-600">{p.visitador}</td>
+                      <td className="px-1 py-0.5 font-medium">{p.granja}</td>
+                      <td className="px-1 py-0.5 text-gray-500">{p.no_registro}</td>
+                      {PESO_RANGES.map(r => (
+                        <td key={r.key} className="px-1 py-0.5 text-center">{(p[r.key as keyof Prevision] as number) || '-'}</td>
+                      ))}
+                      <td className="px-1 py-0.5 text-center">{p.saldos || '-'}</td>
+                      <td className="px-1 py-0.5 text-center font-bold text-green-700">{p.cerdos_prevision}</td>
+                      <td className="px-1 py-0.5 text-center font-bold text-yellow-700">{p.num_camiones}</td>
+                      <td className="px-1 py-0.5 text-center">
+                        <span className={`px-1 rounded text-xs ${p.vaciado === 'Si' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>{p.vaciado}</span>
+                      </td>
+                      <td className="px-1 py-0.5 text-gray-600 max-w-[100px] truncate">{p.observaciones}</td>
+                      <td className="px-0.5 py-0.5 text-center">
+                        <input type="number" min="1" max="53" className="w-11 border rounded px-0.5 py-0.5 text-xs text-center bg-purple-50" defaultValue={p.semana_prevision || p.semana} onBlur={e => { const val = parseInt(e.target.value); if (val && val !== (p.semana_prevision || p.semana)) handleUpdateSemana(p.id, val) }} />
+                      </td>
+                      <td className="px-0.5 py-0.5 whitespace-nowrap">
+                        <button onClick={() => startEdit(p)} className="text-blue-400 hover:text-blue-600 text-xs mr-1" title="Editar">✎</button>
+                        <button onClick={() => handleDelete(p.id)} className="text-red-400 hover:text-red-600 text-xs" title="Eliminar">x</button>
+                      </td>
+                    </tr>
+                  )
                 ))}
-                {previsiones.length > 0 && (
+                {filteredPrevisiones.length > 0 && (
                   <tr className="bg-gray-100 font-bold text-xs">
                     <td className="px-1 py-1" colSpan={3}>TOTALES</td>
-                    <td className="px-1 py-1 text-center">{totals.peso_125_130}</td>
-                    <td className="px-1 py-1 text-center">{totals.peso_120_125}</td>
-                    <td className="px-1 py-1 text-center">{totals.peso_115_120}</td>
-                    <td className="px-1 py-1 text-center">{totals.peso_110_115}</td>
-                    <td className="px-1 py-1 text-center">{totals.peso_105_110}</td>
-                    <td className="px-1 py-1 text-center">{totals.peso_100_105}</td>
-                    <td className="px-1 py-1 text-center">{totals.peso_95_100}</td>
-                    <td className="px-1 py-1 text-center">{totals.peso_menos_95}</td>
+                    {PESO_RANGES.map(r => (
+                      <td key={r.key} className="px-1 py-1 text-center">{totals[r.key as keyof typeof totals]}</td>
+                    ))}
                     <td className="px-1 py-1 text-center">{totals.saldos}</td>
                     <td className="px-1 py-1 text-center text-green-700">{totals.cerdos}</td>
-                    <td className="px-1 py-1 text-center text-yellow-700">{totals.camiones}</td>
+                    <td className="px-1 py-1 text-center text-yellow-700">{rd(totals.camiones)}</td>
                     <td colSpan={4}></td>
                   </tr>
                 )}
-                {previsiones.length === 0 && (
-                  <tr><td colSpan={18} className="p-4 text-center text-gray-400 text-xs">No hay previsiones para esta semana</td></tr>
+                {filteredPrevisiones.length === 0 && (
+                  <tr><td colSpan={20} className="p-4 text-center text-gray-400 text-xs">No hay previsiones para esta semana</td></tr>
                 )}
               </tbody>
             </table>
@@ -529,47 +759,101 @@ export default function Home() {
 
           {/* Mobile cards */}
           <div className="lg:hidden p-2 space-y-2">
-            {previsiones.length === 0 && (
+            {filteredPrevisiones.length === 0 && (
               <p className="text-center text-gray-400 text-sm py-4">No hay previsiones para esta semana</p>
             )}
-            {previsiones.map(p => (
-              <div key={p.id} className="border rounded-lg p-3 bg-gray-50 relative">
-                <button onClick={() => handleDelete(p.id)} className="absolute top-1 right-2 text-red-400 hover:text-red-600 text-lg font-bold">x</button>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-bold text-sm">{p.granja}</span>
-                  {p.visitador && <span className="text-xs text-gray-500">({p.visitador})</span>}
-                </div>
-                <p className="text-xs text-gray-400 mb-2">{p.no_registro}</p>
-                <div className="grid grid-cols-4 gap-1 mb-2 text-xs">
-                  {PESO_RANGES.map(r => {
-                    const val = p[r.key as keyof Prevision] as number
-                    return val ? (
-                      <div key={r.key} className="bg-blue-50 rounded px-1 py-0.5 text-center">
-                        <span className="text-[10px] text-gray-400 block">{r.label}</span>
-                        <span className="font-medium">{val}</span>
-                      </div>
-                    ) : null
-                  })}
-                  {p.saldos > 0 && (
-                    <div className="bg-gray-100 rounded px-1 py-0.5 text-center">
-                      <span className="text-[10px] text-gray-400 block">Saldos</span>
-                      <span className="font-medium">{p.saldos}</span>
+            {filteredPrevisiones.map(p => (
+              editingId === p.id ? (
+                <div key={p.id} className="border-2 border-yellow-400 rounded-lg p-3 bg-yellow-50">
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <div>
+                      <label className="text-xs text-gray-500 font-medium">Visitador</label>
+                      <input type="text" className="w-full border rounded px-2 py-1.5 text-sm" value={editRow.visitador} onChange={e => updateEditRow('visitador', e.target.value)} list="visitadores-list" />
                     </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded text-xs">Cerdos: {p.cerdos_prevision}</span>
-                  <span className="bg-yellow-100 text-yellow-800 font-bold px-2 py-0.5 rounded text-xs">Cam: {p.num_camiones}</span>
-                  <span className={`px-2 py-0.5 rounded text-xs ${p.vaciado === 'Si' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}`}>{p.vaciado === 'Si' ? 'Vaciado' : 'No vaciado'}</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-purple-600">Sem:</span>
-                    <input type="number" min="1" max="53" className="w-12 border rounded px-1 py-0.5 text-xs text-center bg-purple-50" defaultValue={p.semana_prevision || p.semana} onBlur={e => { const val = parseInt(e.target.value); if (val && val !== (p.semana_prevision || p.semana)) handleUpdateSemana(p.id, val) }} />
+                    <div>
+                      <label className="text-xs text-gray-500 font-medium">Vaciado</label>
+                      <select className="w-full border rounded px-2 py-1.5 text-sm" value={editRow.vaciado} onChange={e => updateEditRow('vaciado', e.target.value)}><option value="No">No</option><option value="Si">Si</option></select>
+                    </div>
+                  </div>
+                  <div className="mb-2">
+                    <label className="text-xs text-gray-500 font-medium">Granja</label>
+                    <input type="text" className="w-full border rounded px-2 py-1.5 text-sm" value={editRow.granja} onChange={e => updateEditRow('granja', e.target.value)} list="granjas-edit-m" />
+                    <datalist id="granjas-edit-m">{granjas.map(g => <option key={g.codigo} value={g.nombre}>{g.codigo} - {g.nombre}</option>)}</datalist>
+                  </div>
+                  <div className="mb-2">
+                    <label className="text-xs text-gray-500 font-medium block mb-1">Pesos (No. cerdos)</label>
+                    <div className="grid grid-cols-4 gap-1">
+                      {PESO_RANGES.map(r => (
+                        <div key={r.key}>
+                          <label className="text-[10px] text-gray-400 block text-center">{r.label}</label>
+                          <input type="number" min="0" className="w-full border rounded px-1 py-1 text-sm text-center" value={editRow[r.key as keyof FormRow]} onChange={e => updateEditRow(r.key as keyof FormRow, e.target.value)} placeholder="0" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    <div>
+                      <label className="text-xs text-gray-500 font-medium">Saldos</label>
+                      <input type="number" min="0" className="w-full border rounded px-2 py-1.5 text-sm text-center" value={editRow.saldos} onChange={e => updateEditRow('saldos', e.target.value)} placeholder="0" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 font-medium">Semana</label>
+                      <input type="number" min="1" max="53" className="w-full border rounded px-2 py-1.5 text-sm text-center bg-purple-50" value={editRow.semana_prevision} onChange={e => updateEditRow('semana_prevision', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 font-medium">Observaciones</label>
+                      <input type="text" className="w-full border rounded px-2 py-1.5 text-sm" value={editRow.observaciones} onChange={e => updateEditRow('observaciones', e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1 border-t">
+                    <span className="bg-green-100 text-green-800 font-bold px-2 py-1 rounded text-sm">Cerdos: {calcTotals(editRow).totalCerdos}</span>
+                    <span className="bg-yellow-100 text-yellow-800 font-bold px-2 py-1 rounded text-sm">Cam: {calcTotals(editRow).numCamiones}</span>
+                    <button onClick={handleSaveEdit} disabled={loading} className="ml-auto px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">{loading ? '...' : 'Guardar'}</button>
+                    <button onClick={() => setEditingId(null)} className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-xs hover:bg-gray-400">Cancelar</button>
                   </div>
                 </div>
-                {p.observaciones && <p className="text-xs text-gray-500 mt-1">{p.observaciones}</p>}
-              </div>
+              ) : (
+                <div key={p.id} className="border rounded-lg p-3 bg-gray-50 relative">
+                  <div className="absolute top-1 right-2 flex gap-2">
+                    <button onClick={() => startEdit(p)} className="text-blue-400 hover:text-blue-600 text-lg" title="Editar">✎</button>
+                    <button onClick={() => handleDelete(p.id)} className="text-red-400 hover:text-red-600 text-lg font-bold">x</button>
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-bold text-sm">{p.granja}</span>
+                    {p.visitador && <span className="text-xs text-gray-500">({p.visitador})</span>}
+                  </div>
+                  <p className="text-xs text-gray-400 mb-2">{p.no_registro}</p>
+                  <div className="grid grid-cols-4 gap-1 mb-2 text-xs">
+                    {PESO_RANGES.map(r => {
+                      const val = p[r.key as keyof Prevision] as number
+                      return val ? (
+                        <div key={r.key} className="bg-blue-50 rounded px-1 py-0.5 text-center">
+                          <span className="text-[10px] text-gray-400 block">{r.label}</span>
+                          <span className="font-medium">{val}</span>
+                        </div>
+                      ) : null
+                    })}
+                    {p.saldos > 0 && (
+                      <div className="bg-gray-100 rounded px-1 py-0.5 text-center">
+                        <span className="text-[10px] text-gray-400 block">Saldos</span>
+                        <span className="font-medium">{p.saldos}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded text-xs">Cerdos: {p.cerdos_prevision}</span>
+                    <span className="bg-yellow-100 text-yellow-800 font-bold px-2 py-0.5 rounded text-xs">Cam: {p.num_camiones}</span>
+                    <span className={`px-2 py-0.5 rounded text-xs ${p.vaciado === 'Si' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}`}>{p.vaciado === 'Si' ? 'Vaciado' : 'No vaciado'}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-purple-600">Sem:</span>
+                      <input type="number" min="1" max="53" className="w-12 border rounded px-1 py-0.5 text-xs text-center bg-purple-50" defaultValue={p.semana_prevision || p.semana} onBlur={e => { const val = parseInt(e.target.value); if (val && val !== (p.semana_prevision || p.semana)) handleUpdateSemana(p.id, val) }} />
+                    </div>
+                  </div>
+                  {p.observaciones && <p className="text-xs text-gray-500 mt-1">{p.observaciones}</p>}
+                </div>
+              )
             ))}
-            {previsiones.length > 0 && (
+            {filteredPrevisiones.length > 0 && (
               <div className="bg-gray-100 rounded-lg p-3 font-bold text-sm">
                 <span className="text-green-700">Cerdos: {totals.cerdos}</span>
                 <span className="mx-2">|</span>
@@ -577,25 +861,27 @@ export default function Home() {
               </div>
             )}
           </div>
-          {previsiones.length > 0 && (
+          {filteredPrevisiones.length > 0 && (
             <div className="p-2 border-t text-xs text-gray-500">
-              Total: {previsiones.length} | Camiones: {farmTruckTotals.total}
+              Total: {filteredPrevisiones.length} | Camiones: {farmTruckTotals.total}
             </div>
           )}
         </div>
 
         {/* Truck breakdown per farm */}
-        {previsiones.length > 0 && (
+        {filteredPrevisiones.length > 0 && (
           <div className="bg-white rounded-lg shadow mt-3">
             <div className="p-2 border-b bg-yellow-50 rounded-t-lg">
               <h2 className="text-sm font-semibold text-yellow-800">Tipos de Camiones por Granja</h2>
-              <p className="text-xs text-yellow-600">125-130: 190 anim/cam | 120-125: 200 | 115-120: 210 | &lt;115: 220</p>
+              <p className="text-xs text-yellow-600">135-140: 170 anim/cam | 130-135: 180 | 125-130: 190 | 120-125: 200 | 115-120: 210 | &lt;115: 220</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="px-2 py-1 text-left font-semibold">Granja</th>
+                    <th className="px-2 py-1 text-center font-semibold bg-blue-50">135-140</th>
+                    <th className="px-2 py-1 text-center font-semibold bg-blue-50">130-135</th>
                     <th className="px-2 py-1 text-center font-semibold bg-blue-50">125-130</th>
                     <th className="px-2 py-1 text-center font-semibold bg-blue-50">120-125</th>
                     <th className="px-2 py-1 text-center font-semibold bg-blue-50">115-120</th>
@@ -607,6 +893,8 @@ export default function Home() {
                   {farmTrucks.map((f, i) => (
                     <tr key={i} className="border-b hover:bg-gray-50">
                       <td className="px-2 py-1 font-medium">{f.granja}</td>
+                      <td className="px-2 py-1 text-center">{f.t135 || '-'}</td>
+                      <td className="px-2 py-1 text-center">{f.t130 || '-'}</td>
                       <td className="px-2 py-1 text-center">{f.t125 || '-'}</td>
                       <td className="px-2 py-1 text-center">{f.t120 || '-'}</td>
                       <td className="px-2 py-1 text-center">{f.t115 || '-'}</td>
@@ -616,6 +904,8 @@ export default function Home() {
                   ))}
                   <tr className="bg-gray-100 font-bold">
                     <td className="px-2 py-1">TOTAL</td>
+                    <td className="px-2 py-1 text-center">{farmTruckTotals.t135}</td>
+                    <td className="px-2 py-1 text-center">{farmTruckTotals.t130}</td>
                     <td className="px-2 py-1 text-center">{farmTruckTotals.t125}</td>
                     <td className="px-2 py-1 text-center">{farmTruckTotals.t120}</td>
                     <td className="px-2 py-1 text-center">{farmTruckTotals.t115}</td>
