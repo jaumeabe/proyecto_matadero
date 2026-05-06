@@ -438,12 +438,13 @@ export default function Home() {
           <div className="p-2 border-b bg-blue-50 rounded-t-lg flex items-center gap-2">
             <h2 className="text-sm font-semibold text-blue-800">Nueva Prevision - Semana</h2>
             <input
-              type="number"
-              min="1"
-              max="53"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="w-14 border rounded px-1 py-0.5 text-sm font-semibold text-blue-800 bg-white"
               value={semana}
-              onChange={e => setSemana(parseInt(e.target.value) || semanaActual)}
+              onChange={e => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1 && v <= 53) setSemana(v); else if (e.target.value === '') setSemana(0) }}
+              onBlur={e => { if (!parseInt(e.target.value)) setSemana(semanaActual) }}
             />
           </div>
 
@@ -551,7 +552,7 @@ export default function Home() {
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 font-medium">Semana</label>
-                      <input type="number" min="1" max="53" className="w-full border rounded px-2 py-1.5 text-sm text-center bg-purple-50" value={row.semana_prevision} onChange={e => updateRow(idx, 'semana_prevision', e.target.value)} placeholder={semana.toString()} />
+                      <input type="text" inputMode="numeric" pattern="[0-9]*" className="w-full border rounded px-2 py-1.5 text-sm text-center bg-purple-50" value={row.semana_prevision} onChange={e => updateRow(idx, 'semana_prevision', e.target.value)} placeholder={semana.toString()} />
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 font-medium">Observaciones</label>
@@ -798,7 +799,7 @@ export default function Home() {
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 font-medium">Semana</label>
-                      <input type="number" min="1" max="53" className="w-full border rounded px-2 py-1.5 text-sm text-center bg-purple-50" value={editRow.semana_prevision} onChange={e => updateEditRow('semana_prevision', e.target.value)} />
+                      <input type="text" inputMode="numeric" pattern="[0-9]*" className="w-full border rounded px-2 py-1.5 text-sm text-center bg-purple-50" value={editRow.semana_prevision} onChange={e => updateEditRow('semana_prevision', e.target.value)} />
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 font-medium">Observaciones</label>
