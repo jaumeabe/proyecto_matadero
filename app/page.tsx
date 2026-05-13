@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { granjas } from '@/lib/granjas'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { granjas as granjasStatic, type Granja } from '@/lib/granjas'
 
 const VISITADORES = ['SERGIO', 'LIVIU', 'BOGDAN', 'VALENTIN', 'JULIA', 'JORGE SCARLAT', 'JORDI', 'VANESSA', 'PAU', 'MARIA', 'EDUARD', 'ALICIA']
 
@@ -126,17 +126,29 @@ export default function Home() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editRow, setEditRow] = useState<FormRow>(emptyRow())
   const [visitadores, setVisitadores] = useState<string[]>(VISITADORES)
+  const [granjas, setGranjas] = useState<Granja[]>(granjasStatic)
   const [showAdminVisitadores, setShowAdminVisitadores] = useState(false)
   const [nuevoVisitador, setNuevoVisitador] = useState('')
   const [adminPassword, setAdminPassword] = useState('')
   const [adminAuthed, setAdminAuthed] = useState(false)
   const [adminError, setAdminError] = useState('')
+  const [importingGranjas, setImportingGranjas] = useState(false)
+  const [importResult, setImportResult] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchVisitadores = useCallback(async () => {
     try {
       const res = await fetch('/api/visitadores')
       const data = await res.json()
       if (data.success && data.data.length > 0) setVisitadores(data.data)
+    } catch { /* ignore */ }
+  }, [])
+
+  const fetchGranjas = useCallback(async () => {
+    try {
+      const res = await fetch('/api/granjas')
+      const data = await res.json()
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) setGranjas(data.data)
     } catch { /* ignore */ }
   }, [])
 
@@ -158,10 +170,11 @@ export default function Home() {
         setDbReady(true)
         fetchPrevisiones()
         fetchVisitadores()
+        fetchGranjas()
       } catch { setDbReady(false) }
     }
     setup()
-  }, [fetchPrevisiones, fetchVisitadores])
+  }, [fetchPrevisiones, fetchVisitadores, fetchGranjas])
 
   function openAdminVisitadores() {
     setAdminPassword('')
@@ -188,6 +201,29 @@ export default function Home() {
   async function deleteVisitador(nombre: string) {
     await fetch(`/api/visitadores?nombre=${encodeURIComponent(nombre)}`, { method: 'DELETE', headers: { 'x-admin-password': adminPassword } })
     fetchVisitadores()
+  }
+
+  async function handleImportGranjas(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImportingGranjas(true)
+    setImportResult('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/granjas', { method: 'POST', headers: { 'x-admin-password': adminPassword }, body: fd })
+      const data = await res.json()
+      if (!data.success) {
+        setImportResult('Error: ' + (data.error || 'desconocido'))
+      } else {
+        setImportResult(`Importadas ${data.count} granjas`)
+        await fetchGranjas()
+      }
+    } catch (err) {
+      setImportResult('Error: ' + (err instanceof Error ? err.message : 'desconocido'))
+    }
+    setImportingGranjas(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   function updateRow(idx: number, field: keyof FormRow, value: string) {
@@ -590,11 +626,12 @@ export default function Home() {
                   </div>
                 ) : (
                   <>
+                    <p className="text-xs font-semibold text-gray-700 mb-1">Visitadores</p>
                     <div className="flex gap-2 mb-3">
                       <input type="text" value={nuevoVisitador} onChange={e => setNuevoVisitador(e.target.value)} onKeyDown={e => e.key === 'Enter' && addVisitador()} placeholder="Nuevo visitador..." className="flex-1 border rounded px-2 py-1 text-xs" />
                       <button onClick={addVisitador} className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">Añadir</button>
                     </div>
-                    <ul className="overflow-y-auto flex-1 divide-y">
+                    <ul className="overflow-y-auto flex-1 divide-y mb-3 max-h-48">
                       {visitadores.map(v => (
                         <li key={v} className="flex items-center justify-between py-1.5 px-1">
                           <span className="text-sm">{v}</span>
@@ -602,6 +639,22 @@ export default function Home() {
                         </li>
                       ))}
                     </ul>
+                    <div className="border-t pt-3">
+                      <p className="text-xs font-semibold text-gray-700 mb-1">Granjas ({granjas.length})</p>
+                      <p className="text-[11px] text-gray-500 mb-2">Sube un Excel para actualizar los desplegables. Columnas esperadas: Granja, Nombre, Tipo Granja, No. Registro.</p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".xlsx,.xls"
+                          onChange={handleImportGranjas}
+                          disabled={importingGranjas}
+                          className="text-xs flex-1"
+                        />
+                      </div>
+                      {importingGranjas && <p className="text-xs text-gray-500 mt-1">Importando...</p>}
+                      {importResult && <p className={`text-xs mt-1 ${importResult.startsWith('Error') ? 'text-red-600' : 'text-green-600'}`}>{importResult}</p>}
+                    </div>
                   </>
                 )}
               </div>
