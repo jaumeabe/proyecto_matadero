@@ -10,8 +10,10 @@ export async function GET(request: NextRequest) {
 
     let rows
     if (semana && anio) {
+      // Filtramos por la semana de previsión (objetivo). Si no hay valor
+      // explícito (semana_prevision = 0/NULL) caemos a la semana de entrada.
       rows = await sql(
-        'SELECT * FROM previsiones WHERE semana = $1 AND anio = $2 ORDER BY created_at DESC',
+        'SELECT * FROM previsiones WHERE COALESCE(NULLIF(semana_prevision, 0), semana) = $1 AND anio = $2 ORDER BY created_at DESC',
         [semana, anio]
       )
     } else {

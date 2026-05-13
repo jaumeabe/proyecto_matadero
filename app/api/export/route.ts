@@ -12,7 +12,10 @@ export async function GET(request: NextRequest) {
 
     let rows
     if (semana && anio) {
-      rows = await sql('SELECT * FROM previsiones WHERE semana = $1 AND anio = $2 ORDER BY visitador, granja', [semana, anio])
+      rows = await sql(
+        'SELECT * FROM previsiones WHERE COALESCE(NULLIF(semana_prevision, 0), semana) = $1 AND anio = $2 ORDER BY visitador, granja',
+        [semana, anio]
+      )
     } else {
       rows = await sql('SELECT * FROM previsiones ORDER BY anio DESC, semana DESC, visitador, granja')
     }
