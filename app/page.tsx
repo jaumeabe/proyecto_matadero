@@ -111,15 +111,20 @@ function calcTotals(row: FormRow) {
 
 export default function Home() {
   const now = new Date()
-  const semanaActual = getWeekNumber(now)
-  const anio = now.getFullYear()
+  // Las previsiones apuntan a la semana siguiente, así que el formulario
+  // por defecto se posiciona en (hoy + 7 días) para evitar que el usuario
+  // tenga que cambiar la semana cada vez.
+  const proxima = new Date(now)
+  proxima.setDate(proxima.getDate() + 7)
+  const semanaDefault = getWeekNumber(proxima)
+  const anio = proxima.getFullYear()
 
-  const [semana, setSemana] = useState(semanaActual)
+  const [semana, setSemana] = useState(semanaDefault)
   const [rows, setRows] = useState<FormRow[]>([emptyRow()])
   const [previsiones, setPrevisiones] = useState<Prevision[]>([])
   const [loading, setLoading] = useState(false)
   const [dbReady, setDbReady] = useState(false)
-  const [filterSemana, setFilterSemana] = useState(semanaActual.toString())
+  const [filterSemana, setFilterSemana] = useState(semanaDefault.toString())
   const [filterAnio, setFilterAnio] = useState(anio.toString())
   const [filterVisitador, setFilterVisitador] = useState('')
   const [searchGranja, setSearchGranja] = useState('')
@@ -480,7 +485,7 @@ export default function Home() {
               className="w-14 border rounded px-1 py-0.5 text-sm font-semibold text-blue-800 bg-white"
               value={semana}
               onChange={e => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1 && v <= 53) setSemana(v); else if (e.target.value === '') setSemana(0) }}
-              onBlur={e => { if (!parseInt(e.target.value)) setSemana(semanaActual) }}
+              onBlur={e => { if (!parseInt(e.target.value)) setSemana(semanaDefault) }}
             />
           </div>
 
