@@ -261,6 +261,8 @@ export default function Home() {
   async function handleSubmit() {
     const validRows = rows.filter(r => r.granja)
     if (validRows.length === 0) return alert('Selecciona al menos una granja')
+    const sinVisitador = validRows.find(r => !r.visitador.trim())
+    if (sinVisitador) return alert('El campo Visitador es obligatorio en todas las filas')
 
     setLoading(true)
     try {
@@ -412,9 +414,9 @@ export default function Home() {
     ? granjas.filter(g => g.nombre.toLowerCase().includes(searchGranja.toLowerCase()) || g.codigo.toLowerCase().includes(searchGranja.toLowerCase()))
     : granjas
 
-  // Filter previsiones by visitador
+  // Filter previsiones by visitador (case-insensitive)
   const filteredPrevisiones = filterVisitador
-    ? previsiones.filter(p => p.visitador === filterVisitador)
+    ? previsiones.filter(p => (p.visitador || '').toLowerCase() === filterVisitador.toLowerCase())
     : previsiones
 
   // Totals for the accumulated table
