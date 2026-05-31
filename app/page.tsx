@@ -180,6 +180,8 @@ export default function Home() {
     if (validRows.length === 0) return alert('Selecciona al menos una granja')
     const sinVisitador = validRows.find(r => !r.visitador.trim())
     if (sinVisitador) return alert('El campo Visitador es obligatorio en todas las filas')
+    const visitadorInvalido = validRows.find(r => !VISITADORES.some(v => v.toLowerCase() === r.visitador.trim().toLowerCase()))
+    if (visitadorInvalido) return alert(`Visitador "${visitadorInvalido.visitador}" no es valido. Selecciona uno del desplegable.`)
 
     setLoading(true)
     try {
